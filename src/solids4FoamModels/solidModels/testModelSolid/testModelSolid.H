@@ -37,10 +37,6 @@ SourceFiles
 #define testModelSolid_H
 
 #include "solidModel.H"
-#include "volFields.H"
-#include "surfaceFields.H"
-#include "pointFields.H"
-#include "uniformDimensionedFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -62,28 +58,7 @@ class testModelSolid
 {
     // Private data
 
-        //- Implicit stiffness; coefficient of the Laplacian term
-        //  The value of this term only affects convergence and not the answer
-        //  In the case of Hookean elasticity, (2*mu + lambda) is the optimum
-        const volScalarField impK_;
-
-        //- Implicit stiffness surface field
-        surfaceScalarField impKf_;
-
-        //- Reciprocal of impK
-        //  We divide by impK every time tractionBoundarySnGrad is called so we
-        //  will store the reciprocal for effficiency
-        const volScalarField rImpK_;
-
-        //- Predict new time-step fields using the velocity field
-        const Switch predictor_;
-
-
     // Private Member Functions
-
-        //- Predict the fields for the next time-step based on the
-        //  previous time-steps
-        void predict();
 
         //- Disallow default bitwise copy construct
         testModelSolid(const testModelSolid&);
