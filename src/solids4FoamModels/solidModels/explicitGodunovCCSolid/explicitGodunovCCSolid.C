@@ -17,7 +17,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "testModelSolid.H"
+#include "explicitGodunovCCSolid.H"
 #include "addToRunTimeSelectionTable.H"
 
 
@@ -33,8 +33,8 @@ namespace solidModels
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-defineTypeNameAndDebug(testModelSolid, 0);
-addToRunTimeSelectionTable(solidModel, testModelSolid, dictionary);
+defineTypeNameAndDebug(explicitGodunovCCSolid, 0);
+addToRunTimeSelectionTable(solidModel, explicitGodunovCCSolid, dictionary);
 
 
 // * * * * * * * * * * *  Private Member Functions * * * * * * * * * * * * * //
@@ -42,7 +42,7 @@ addToRunTimeSelectionTable(solidModel, testModelSolid, dictionary);
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-testModelSolid::testModelSolid
+explicitGodunovCCSolid::explicitGodunovCCSolid
 (
     Time& runTime,
     const word& region
@@ -55,7 +55,7 @@ testModelSolid::testModelSolid
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 
-bool testModelSolid::evolve()
+bool explicitGodunovCCSolid::evolve()
 {
     Info<< "Evolving solid solver" << endl;
 
@@ -77,7 +77,7 @@ bool testModelSolid::evolve()
 }
 
 
-tmp<vectorField> testModelSolid::tractionBoundarySnGrad
+tmp<vectorField> explicitGodunovCCSolid::tractionBoundarySnGrad
 (
     const vectorField& traction,
     const scalarField& pressure,

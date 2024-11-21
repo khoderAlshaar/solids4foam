@@ -16,7 +16,7 @@ License
     along with solids4foam.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    testModelSolid
+    explicitGodunovCCSolid
 
 Description
     Mathematical model where linear geometry is assumed i.e. small strains and
@@ -29,14 +29,20 @@ Author
     Philip Cardiff, UCD.  All rights reserved.
 
 SourceFiles
-    testModelSolid.C
+    explicitGodunovCCSolid.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef testModelSolid_H
-#define testModelSolid_H
+#ifndef explicitGodunovCCSolid_H
+#define explicitGodunovCCSolid_H
 
 #include "solidModel.H"
+#include "operations.H"
+#include "solidMaterialModel.H"
+#include "mechanics.H"
+#include "gradientSchemes.H"
+#include "interpolationSchemes.H"
+#include "angularMomentum.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,10 +55,10 @@ namespace solidModels
 {
 
 /*---------------------------------------------------------------------------*\
-                        Class testModelSolid Declaration
+                        Class explicitGodunovCCSolid Declaration
 \*---------------------------------------------------------------------------*/
 
-class testModelSolid
+class explicitGodunovCCSolid
 :
     public solidModel
 {
@@ -61,10 +67,10 @@ class testModelSolid
     // Private Member Functions
 
         //- Disallow default bitwise copy construct
-        testModelSolid(const testModelSolid&);
+        explicitGodunovCCSolid(const explicitGodunovCCSolid&);
 
         //- Disallow default bitwise assignment
-        void operator=(const testModelSolid&);
+        void operator=(const explicitGodunovCCSolid&);
 
 
 protected:
@@ -81,12 +87,12 @@ protected:
 public:
 
     //- Runtime type information
-    TypeName("testModel");
+    TypeName("explicitGodunovCC");
 
     // Constructors
 
         //- Construct from components
-        testModelSolid
+        explicitGodunovCCSolid
         (
             Time& runTime,
             const word& region = dynamicFvMesh::defaultRegion
@@ -94,7 +100,7 @@ public:
 
     // Destructor
 
-        virtual ~testModelSolid()
+        virtual ~explicitGodunovCCSolid()
         {}
 
 
