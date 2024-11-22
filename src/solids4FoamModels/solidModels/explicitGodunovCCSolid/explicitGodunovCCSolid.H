@@ -253,6 +253,13 @@ class explicitGodunovCCSolid
     volTensorField phi_P_;
 
     // Private Member Functions
+    //- Check for solution convergence
+    bool converged
+    (
+        const int iCorr,
+        const dimensionedScalar pDeltaT,
+        const GeometricField<vector, fvPatchField, volMesh>& vf
+    );
 
         //- Disallow default bitwise copy construct
         explicitGodunovCCSolid(const explicitGodunovCCSolid&);

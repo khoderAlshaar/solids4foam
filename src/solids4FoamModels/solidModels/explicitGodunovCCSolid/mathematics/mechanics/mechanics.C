@@ -183,18 +183,7 @@ void mechanics::time
 {
     const dimensionedScalar& h = op.minimumEdgeLength();
 
-    if (timeStepping_ == "variable")
-    {
-        deltaT = (cfl_*h)/Up_time;
-        runTime.setDeltaT(deltaT);
-    }
-
-    runTime++;
-    tStep_++;
-
-    Info<< "\nTime step =" << tStep_ << nl
-        << "Time increment = " << runTime.deltaTValue() << " s" << nl
-        << "Time = " << runTime.timeName() << " s" << endl;
+    deltaT = min((cfl_*h)/Up_time, 0.666*runTime.deltaT());
 }
 
 

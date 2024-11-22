@@ -66,7 +66,8 @@ void angularMomentum::AMconservation
     GeometricField<vector, fvPatchField, volMesh>& rhsLm,
     GeometricField<vector, fvPatchField, volMesh>& rhsLm1,
     const GeometricField<vector, fvPatchField, volMesh>& rhsAm,
-    const scalar& RKstage
+    const scalar& RKstage,
+    const dimensionedScalar& pDeltaT 
 ) const
 {
     const scalarField& V_ = mesh_.V();
@@ -74,12 +75,12 @@ void angularMomentum::AMconservation
     const volVectorField& x_ = db.lookupObject<volVectorField>("x");
     const volVectorField& lm_ = db.lookupObject<volVectorField>("lm");
 
-    const dimensionedScalar deltaT
-    (
-        "deltaT",
-        dimensionSet(0,0,1,0,0,0,0),
-        db.time().deltaTValue()
-    );
+    // const dimensionedScalar deltaT
+    // (
+    //     "deltaT",
+    //     dimensionSet(0,0,1,0,0,0,0),
+    //     db.time().deltaTValue()
+    // );
 
     tmp<GeometricField<vector, fvPatchField, volMesh> > tvf_x
     (
@@ -124,9 +125,9 @@ void angularMomentum::AMconservation
 
     else if (RKstage == 1)
     {
-        xAM = x_.oldTime() + (deltaT/2.0)*(lm_.oldTime()/rho_);
-        lmAM = lm_.oldTime() + (deltaT*rhsLm1);
-        xAM = xAM + ((deltaT*(lmAM/rho_))/2.0);
+        xAM = x_.oldTime() + (pDeltaT/2.0)*(lm_.oldTime()/rho_);
+        lmAM = lm_.oldTime() + (pDeltaT*rhsLm1);
+        xAM = xAM + ((pDeltaT*(lmAM/rho_))/2.0);
     }
 
     tensor K_LL = tensor::zero;
