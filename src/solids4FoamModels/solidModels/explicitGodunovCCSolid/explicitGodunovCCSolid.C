@@ -74,11 +74,13 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
             IOobject::NO_WRITE
         )
     ),
-    
-    beta_
+ 
+    incompressibilityCoefficient_
     (
         solidModelDict().lookupOrAddDefault<scalar>("incompressiblilityCoefficient", 1)
     ),
+
+    beta_(incompressibilityCoefficient_),
    
     angularMomentumConservation_
     (

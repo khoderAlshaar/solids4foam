@@ -72,6 +72,7 @@ class explicitGodunovCCSolid
     // Control dictionary
     IOdictionary controlDict_;
 
+    scalar incompressibilityCoefficient_; 
     // Stabilisation parameter for near incompressibility
     const scalar& beta_;
 

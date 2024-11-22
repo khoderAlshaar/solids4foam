@@ -44,8 +44,14 @@ angularMomentum::angularMomentum
 )
 :
     mesh_(vm),
-    rho_(dict.lookup("rho"))
-{}
+    rho_("rho",dimDensity , 0.0)
+
+{
+    const PtrList<entry> lawEntries(dict.lookup("mechanical"));
+    const dictionary& materialDict = lawEntries[0].dict();
+
+    rho_ = dimensionedScalar(materialDict.lookup("rho"));
+}
 
 
 // * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * * //
