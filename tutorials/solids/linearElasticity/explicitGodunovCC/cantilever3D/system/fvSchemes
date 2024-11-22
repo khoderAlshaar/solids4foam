@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+d2dt2Schemes
+{
+    default                 steadyState;
+}
+
+ddtSchemes
+{
+    default                 steadyState;
+}
+
+gradSchemes
+{
+     default                none;
+     grad(D)                leastSquares;
+     grad(DD)                leastSquares;
+     grad(U)                leastSquares;
+     grad(laplacian(((0.5*(deltaT+deltaT0))*interpolate(impK)),U))            leastSquares;
+}
+
+divSchemes
+{
+    default                 none;
+    div(sigma)              Gauss linear;
+    div((impK*grad(D)))     Gauss linear;
+}
+
+laplacianSchemes
+{
+    default                 none;
+    laplacian(DD,D)         Gauss linear corrected;
+    laplacian(DU,U)         Gauss linear corrected;
+}
+
+snGradSchemes
+{
+    default                 none;
+    // snGrad(D)               corrected;
+}
+
+interpolationSchemes
+{
+    default                 linear;
+    interpolate(impK)       linear;
+    interpolate(grad(D))    linear;
+}
+
+
+// ************************************************************************* //

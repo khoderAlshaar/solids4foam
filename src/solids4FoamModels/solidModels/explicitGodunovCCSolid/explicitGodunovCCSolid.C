@@ -385,8 +385,14 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
 
     // Print centroid of geometry
     mech_.printCentroid();
-    // #include "updateVariables.H"   
-    // #include "riemannSolver.H"
+    #include "updateVariables.H"   
+    #include "riemannSolver.H"
+
+    x_.oldTime();
+    xF_.oldTime();
+    lm_.oldTime();
+    F_.oldTime();
+    xN_.oldTime();
 }
 
 
@@ -399,18 +405,36 @@ bool explicitGodunovCCSolid::evolve()
     Info<< "Evolving solid solver" << endl;
 
 
-    // Mesh update loop
-    do
-    {
+        mech_.time(runTime_, deltaT_, max(Up_time_));
+
+        forAll(RKstages_, stage)
+        {
+            #include "gEqns.H"
+
+            if (RKstages_[stage] == 0)
+            {
+                #include "updateVariables.H"
+            }
+        }
+
+        x_  = 0.5*(x_.oldTime() + x_);
+        xF_ = 0.5*(xF_.oldTime() + xF_);
+        lm_ = 0.5*(lm_.oldTime() + lm_);
+        F_  = 0.5*(F_.oldTime() + F_);
+        xN_ = 0.5*(xN_.oldTime() + xN_);            
+
+        #include "updateVariables.H"
 
 
-        Info<< "Solving solid system" << endl;
+        if (runTime_.outputTime())
+        {
+            uN_ = xN_ - XN_;
+            uN_.write();
 
-
+            p_ = model_.pressure();
+            p_.write();
+        }
      
-    }
-    while (mesh().update());
-
 
     return true;
 }
