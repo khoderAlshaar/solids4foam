@@ -40,6 +40,23 @@ addToRunTimeSelectionTable(solidModel, explicitGodunovCCSolid, dictionary);
 
 
 // * * * * * * * * * * *  Private Member Functions * * * * * * * * * * * * * //
+void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux() const
+{
+    Info << "making Numerial Flux" <<endl;
+    if (!numericalFluxPtr_.empty())
+    {
+        FatalErrorIn("void Foam::explicitGodunovCCSolid::makeNumericalFlux() const")
+            << "pointer already set!" << abort(FatalError);
+    }
+
+//    numericalFluxPtr_.set
+//     (
+//         // numericalFlux::New(runTime_)
+//         numericalFlux::New()
+//     );
+        numericalFluxPtr_ = numericalFlux::New(runTime_);
+
+}
 
 bool explicitGodunovCCSolid::converged
 (
@@ -130,6 +147,20 @@ bool explicitGodunovCCSolid::converged
 
     return converged;
  }
+
+
+// * * * * * * * * * * * * * * * * Protected member functions  * * * * * * * * * * * * * * //
+
+Foam::numericalFlux& explicitGodunovCCSolid::flux()
+{
+    if (numericalFluxPtr_.empty())
+    {
+        makeNumericalFlux();
+    }
+
+    return numericalFluxPtr_();
+}
+
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -437,11 +468,15 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
         IOobject("phi_P", mesh()),
         mesh(),
         dimensionedTensor("phi_P", dimensionSet(0,0,0,0,0,0,0), tensor::zero)
-    )
+    ),
+
+    numericalFluxPtr_()
 
 
 {
 
+
+    
     Info << "Reading data from dictionaries ..." << endl;
     if
     (
@@ -502,15 +537,36 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     Info<< "Frequency at which info is printed: every " << infoFrequency()
         << " time-steps" << endl;
 
+
+    // makeNumericalFlux();
+        // autoPtr<numericalFlux> dbnsFluxPtr = numericalFlux::New();
+        //     numericalFlux& dbnsFlux = dbnsFluxPtr();
+    // numericalFluxPtr_ = numericalFlux::New(); // Initialize flux_ here
 }
 
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+const Foam::numericalFlux& explicitGodunovCCSolid::flux() const
+{
+    if (numericalFluxPtr_.empty())
+    {
+        makeNumericalFlux();
+    }
+
+    return numericalFluxPtr_();
+}
 
 
 bool explicitGodunovCCSolid::evolve()
 {
+    flux().computeFlux();
+    // makeNumericalFlux();
+    //   autoPtr<numericalFlux>  FluxPtr_ = numericalFlux::New(); // Initialize flux_ here
+
+
+
+    // dbnsFlux.sayHello();
     Info<< "starting of evolve function" << endl;
     // Mesh update loop
     do

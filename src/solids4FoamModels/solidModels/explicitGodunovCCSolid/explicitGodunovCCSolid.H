@@ -57,6 +57,8 @@ SourceFiles
 #include "gradientSchemes.H"
 #include "interpolationSchemes.H"
 #include "angularMomentum.H"
+#include "numericalFlux.H"
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -266,7 +268,14 @@ class explicitGodunovCCSolid
     volVectorField phi_lm_;
     volTensorField phi_P_;
 
+    mutable autoPtr<numericalFlux> numericalFluxPtr_; // Member variable
+
+
     // Private Member Functions
+
+        //- Make the numericalFlux
+        void makeNumericalFlux() const;
+
     //- Check for solution convergence
     bool converged
     (
@@ -284,6 +293,9 @@ class explicitGodunovCCSolid
 
 protected:
 
+
+        //- Return non-const reference to the mechanical model
+        numericalFlux& flux();
     // Protected member functions
 
         //- Return nonlinear geometry enumerator
@@ -326,6 +338,9 @@ public:
             }
 
         // Edit
+
+            //- Return const reference to the numericalFlux 
+            const numericalFlux& flux() const;
 
             //- Evolve the solid solver and solve the mathematical model
             virtual bool evolve();
