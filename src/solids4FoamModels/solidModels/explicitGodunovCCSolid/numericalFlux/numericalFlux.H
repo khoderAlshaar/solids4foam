@@ -92,15 +92,18 @@ public:
         state,
         (
             Time& runTime,
+            const word& region,
             const dynamicFvMesh& mesh,
-            const volVectorField& lm,
-            const volTensorField& F,
-            const volTensorField& P,
+            volVectorField& lm,
+            pointVectorField& lmN,
+            volTensorField& F,
+            volTensorField& P,
             solidMaterialModel& model,
             operations& op,
-            mechanics& mech
+            mechanics& mech,
+            gradientSchemes& grad
         ),
-        (runTime, mesh, lm, F, P, model, op, mech)
+        (runTime, region, mesh, lm, lmN, F, P, model, op, mech, grad)
     );
 #endif
 
@@ -118,13 +121,16 @@ public:
     static autoPtr<numericalFlux> New
     (
         Time& runTime,
+        const word& region,
         const dynamicFvMesh& mesh,
-        const volVectorField& lm,
-        const volTensorField& F,
-        const volTensorField& P,
+        volVectorField& lm,
+        pointVectorField& lmN,
+        volTensorField& F,
+        volTensorField& P,
         solidMaterialModel& model,
         operations& op,
-        mechanics& mech
+        mechanics& mech,
+        gradientSchemes& grad
     );
 
     //- Destructor

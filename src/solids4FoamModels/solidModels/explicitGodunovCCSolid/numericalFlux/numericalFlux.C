@@ -51,25 +51,53 @@ Foam::numericalFlux::~numericalFlux()
 Foam::autoPtr<Foam::numericalFlux> Foam::numericalFlux::New
 (
     Time& runTime,
+    const word& region,
     const dynamicFvMesh& mesh,
-    const volVectorField& lm,
-    const volTensorField& F,
-    const volTensorField& P,
+    volVectorField& lm,
+    pointVectorField& lmN,
+    volTensorField& F,
+    volTensorField& P,
     solidMaterialModel& model,
     operations& op,
-    mechanics& mech
+    mechanics& mech,
+    gradientSchemes& grad
 )
 {
+    // IOdictionary dict
+    // (
+    //     IOobject
+    //     (
+    //         "fvSchemes",
+    //         mesh.time().caseSystem(),
+    //         runTime,
+    //         IOobject::MUST_READ,
+    //         IOobject::NO_WRITE,
+    //         false  // Do not register
+    //     )
+    // );
+
     IOdictionary dict
     (
-        IOobject
+        // If region == "region0" then read from the main case
+        // Otherwise, read from the region/sub-mesh directory e.g.
+        // constant/fluid or constant/solid
+        bool(region == dynamicFvMesh::defaultRegion)
+      ? IOobject
         (
             "fvSchemes",
-            runTime.system(),
+            runTime.caseSystem(),
             runTime,
             IOobject::MUST_READ,
-            IOobject::NO_WRITE,
-            false  // Do not register
+            IOobject::NO_WRITE
+        )
+      : IOobject
+        (
+            "fvSchemes",
+            runTime.caseSystem(),
+            region, // using 'local' property of IOobject
+            runTime,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
         )
     );
     const dictionary& subDict = dict.subDict("divSchemes").subDict("numericalFlux");
@@ -92,5 +120,5 @@ Foam::autoPtr<Foam::numericalFlux> Foam::numericalFlux::New
             << exit(FatalError);
     }
 
-    return autoPtr<numericalFlux>(cstrIter()(runTime, mesh, lm, F, P, model, op, mech));
+    return autoPtr<numericalFlux>(cstrIter()(runTime, region, mesh, lm, lmN, F, P, model, op, mech, grad));
 }

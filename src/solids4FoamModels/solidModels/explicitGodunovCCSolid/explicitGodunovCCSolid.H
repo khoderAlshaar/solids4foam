@@ -81,6 +81,8 @@ class explicitGodunovCCSolid
     // Private data
         Time& runTime_;
 
+        const word& region_;
+
     // Reading dictionaries
     // Mechanical properties
     IOdictionary mechanicalProperties_;
@@ -99,9 +101,6 @@ class explicitGodunovCCSolid
 
     // Mesh-related fields
     operations op_;
-
-    // Point mesh
-    // pointMesh pMesh(mesh); // available pMesh()
 
     // Material face area
     const surfaceScalarField& magSf_;
@@ -133,11 +132,11 @@ class explicitGodunovCCSolid
 
     //Creating mesh normal fields
 
-    // Material normals
-    const surfaceVectorField N_;
+    // // Material normals
+    // const surfaceVectorField N_;
 
-    // Spatial normals
-    surfaceVectorField n_;
+    // // Spatial normals
+    // surfaceVectorField n_;
 
     //Creating linear momentum fields
     // Cell linear momentum
@@ -162,7 +161,7 @@ class explicitGodunovCCSolid
     // Solid model class
     solidMaterialModel model_;
 
-    // Density
+    // // Density
     const dimensionedScalar& rho_;
 
     // Pressure
@@ -170,9 +169,6 @@ class explicitGodunovCCSolid
 
     // First Piola Kirchhoff stress tensor
     volTensorField P_;
-    volVectorField Px_;
-    volVectorField Py_;
-    volVectorField Pz_;
 
     // Creating fields for wave speeds
 
@@ -192,52 +188,6 @@ class explicitGodunovCCSolid
     // Gradient class
     gradientSchemes grad_;
 
-    // Gradient of cell linear momentum
-    volTensorField lmGrad_;
-
-    // Gradients of first Piola Kirchhoff stress tensor
-    volTensorField PxGrad_;
-    volTensorField PyGrad_;
-    volTensorField PzGrad_;
-
-    //Creating fields for reconstruction
-    // Reconstruction of linear momentum
-    surfaceVectorField lm_M_;
-    surfaceVectorField lm_P_;
-
-    // Reconstruction of PK1 stresses
-    surfaceTensorField P_M_;
-    surfaceTensorField P_P_;
-
-    // Reconstruction of traction
-    surfaceVectorField t_M_;
-    surfaceVectorField t_P_;
-
-    // Creating fields for riemann solver
-    // Surface tensors
-    surfaceTensorField S_lm_;
-    surfaceTensorField S_t_;
-
-    // Contact traction
-    surfaceVectorField tC_;
-
-    // Contact linear momentum
-    surfaceVectorField lmC_;
-
-    // Volumetric fields
-    volVectorField t_b_;
-    volVectorField lm_b_;
-
-    // Creating fields for the constrained procedure
-    // Constrained class
-    interpolationSchemes interpolate_;
-
-    // Cell-averaged linear momentum
-    volVectorField lmR_;
-
-    // Local gradient of cell-averaged linear momentum
-    volTensorField lmRgrad_;
-
 
     // Creating fields for angular momentum
     // Angular momentum class
@@ -253,7 +203,7 @@ class explicitGodunovCCSolid
 
     // Creating fields for post-processing
     // Nodal displacement field
-    pointVectorField uN_;
+    // pointVectorField uN_;
 
     //Creating variables for time
     // Time increment
@@ -263,10 +213,6 @@ class explicitGodunovCCSolid
 
     // Runge-Kutta stage
     scalarList RKstages_;
-
-    //limiter fields
-    volVectorField phi_lm_;
-    volTensorField phi_P_;
 
     mutable autoPtr<numericalFlux> numericalFluxPtr_; // Member variable
 
@@ -293,9 +239,6 @@ class explicitGodunovCCSolid
 
 protected:
 
-
-        //- Return non-const reference to the mechanical model
-        // numericalFlux& flux();
     // Protected member functions
 
         //- Return nonlinear geometry enumerator

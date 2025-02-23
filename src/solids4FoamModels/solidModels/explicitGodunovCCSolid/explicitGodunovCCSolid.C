@@ -52,13 +52,16 @@ void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux()
         numericalFluxPtr_ = numericalFlux::New 
         (       
             runTime_,
+            region_,
             mesh(),
             lm_,
+            lmN_,
             F_,
             P_,
             model_,
             op_,
-            mech_
+            mech_,
+            grad_
         );
 
 }
@@ -154,20 +157,6 @@ bool explicitGodunovCCSolid::converged
  }
 
 
-// * * * * * * * * * * * * * * * * Protected member functions  * * * * * * * * * * * * * * //
-
-// Foam::numericalFlux& explicitGodunovCCSolid::flux()
-// {
-//     if (numericalFluxPtr_.empty())
-//     {
-//         makeNumericalFlux();
-//     }
-
-//     return numericalFluxPtr_();
-// }
-
-
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 explicitGodunovCCSolid::explicitGodunovCCSolid
@@ -178,6 +167,7 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
 :
     solidModel(typeName, runTime, region),
     runTime_(runTime),
+    region_(region),
     //reading dicts
     mechanicalProperties_
     (
@@ -247,9 +237,9 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
 
     xF_(mesh().Cf()),
 
-    // Creating mesh normal fields
-    N_((Sf_ / mesh().magSf()).ref()),
-    n_(N_),
+    // // Creating mesh normal fields
+    // N_((Sf_ / mesh().magSf()).ref()),
+    // n_(N_),
 
     // Creating linear momentum fields
     lm_
@@ -306,9 +296,6 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     rho_(model_.density()),
     p_(model_.pressure()),
     P_(model_.piola()),
-    Px_(op_.decomposeTensorX(P_)),
-    Py_(op_.decomposeTensorY(P_)),
-    Pz_(op_.decomposeTensorZ(P_)),
 
     mech_
     (
@@ -339,80 +326,6 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
 
     grad_(mesh()),
 
-    lmGrad_(grad_.gradient(lm_)),
-
-    PxGrad_(grad_.gradient(Px_)),
-    PyGrad_(grad_.gradient(Py_)),
-    PzGrad_(grad_.gradient(Pz_)),
-
-    // Reconstruction of linear momentum
-    lm_M_(
-        IOobject("lm_M", mesh()),
-        mesh(),
-        dimensionedVector("lm_M", lm_.dimensions(), vector::zero)
-    ),
-
-    lm_P_(lm_M_),
-
-    // Reconstruction of PK1 stresses
-    P_M_(
-        IOobject("P_M", mesh()),
-        mesh(),
-        dimensionedTensor("P_M", P_.dimensions(), tensor::zero)
-    ),
-    P_P_(P_M_),
-
-    // Reconstruction of traction
-    t_M_
-    (
-        IOobject("t_M", mesh()),
-        P_M_ & N_
-    ),
-    t_P_((P_P_ & N_).ref()),
-
-    S_lm_(mech_.Smatrix_lm()),
-    S_t_(mech_.Smatrix_t()),
-
-    // Contact traction
-    tC_(t_M_),
-    // Contact linear momentum
-    lmC_(lm_M_),
-    t_b_
-    (
-        IOobject
-        (
-            "t_b",
-            runTime.timeName(),
-            mesh(),
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh()
-    ),
-
-    lm_b_
-    (
-        IOobject
-        (
-            "lm_b",
-            runTime.timeName(),
-            mesh(),
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh()
-    ),
-
-    // Constrained class
-    interpolate_(mesh()),
-
-    // Cell-averaged linear momentum
-    lmR_(interpolate_.surfaceToVol(lmC_)),
-
-    // Local gradient of cell-averaged linear momentum
-    lmRgrad_(grad_.localGradient(lmR_, lmC_)),
-
-
     // Creating fields for angular momentum
     // Angular momentum class
     am_(mesh(), mechanicalProperties_),
@@ -431,20 +344,6 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
         mesh(),
         dimensionedVector("rhsAm", dimensionSet(1,-1,-2,0,0,0,0), vector::zero)
     ),
-        // Nodal displacement field
-    uN_(
-        IOobject
-        (
-            "uN",
-            runTime.timeName(),
-            mesh(),
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        pMesh(),
-        dimensionedVector("uN", dimLength, vector::zero)
-    ),
-
 
     // Time increment
     deltaT_(
@@ -462,21 +361,7 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     // Runge-Kutta stage
     RKstages_(2),
 
-    phi_lm_
-    (
-        IOobject("phi_lm", mesh()),
-        mesh(),
-        dimensionedVector("phi_lm", dimensionSet(0,0,0,0,0,0,0), vector::zero)
-    ),
-    phi_P_
-    (
-        IOobject("phi_P", mesh()),
-        mesh(),
-        dimensionedTensor("phi_P", dimensionSet(0,0,0,0,0,0,0), tensor::zero)
-    ),
-
     numericalFluxPtr_()
-
 
 {
 
@@ -518,7 +403,6 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     // Print centroid of geometry
     mech_.printCentroid();
     #include "updateVariables.H"
-    #include "riemannSolver.H"
 
     x_.oldTime();
     xF_.oldTime();
@@ -560,9 +444,6 @@ Foam::numericalFlux& explicitGodunovCCSolid::flux()
 
 bool explicitGodunovCCSolid::evolve()
 {
-
-
-    // dbnsFlux.sayHello();
     Info<< "starting of evolve function" << endl;
     // Mesh update loop
     do

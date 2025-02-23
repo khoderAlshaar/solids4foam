@@ -18,27 +18,27 @@ License
 \*---------------------------------------------------------------------------*/
 
 // Compute right hand sides
-rhsLm_ = fvc::surfaceIntegrate(tC_*magSf_);
+rhsLm_ = fvc::surfaceIntegrate(flux().lmFlux());
 
 //! angula momentum required to be updated to consider  dual time step?
-if (angularMomentumConservation_ == "yes")
-{
-    rhsAm_ = fvc::surfaceIntegrate((xF_ ^ tC_)*magSf_);
-    am_.AMconservation(rhsLm_, rhsLm1_, rhsAm_, stage , pDeltaT_);
+// if (angularMomentumConservation_ == "yes")
+// {
+//     rhsAm_ = fvc::surfaceIntegrate((xF_ ^ tC_)*magSf_);
+//     am_.AMconservation(rhsLm_, rhsLm1_, rhsAm_, stage , pDeltaT_);
 
-    if (runTime_.timeIndex() == 0)
-    {
-        // Update coordinates
-        x_ += pDeltaT_*(lm_/rho_) - pDeltaT_*( (x_.prevIter() - x_.oldTime())/(deltaT_));
-        xF_ += pDeltaT_*(lmC_/rho_) - pDeltaT_*( (xF_.prevIter() - xF_.oldTime())/(deltaT_));
-    }
-    else
-    {
-        // Update coordinates
-        x_ += pDeltaT_*(lm_/rho_)   - pDeltaT_ * ( (3*x_.prevIter() - 4* x_.oldTime()   + x_.oldTime().oldTime())/(2*deltaT_));
-        xF_ += pDeltaT_*(lmC_/rho_) - pDeltaT_ * ( (3*xF_.prevIter() - 4* xF_.oldTime() + xF_.oldTime().oldTime())/(2*deltaT_));
-    }
-}
+//     if (runTime_.timeIndex() == 0)
+//     {
+//         // Update coordinates
+//         x_ += pDeltaT_*(lm_/rho_) - pDeltaT_*( (x_.prevIter() - x_.oldTime())/(deltaT_));
+//         xF_ += pDeltaT_*(lmC_/rho_) - pDeltaT_*( (xF_.prevIter() - xF_.oldTime())/(deltaT_));
+//     }
+//     else
+//     {
+//         // Update coordinates
+//         x_ += pDeltaT_*(lm_/rho_)   - pDeltaT_ * ( (3*x_.prevIter() - 4* x_.oldTime()   + x_.oldTime().oldTime())/(2*deltaT_));
+//         xF_ += pDeltaT_*(lmC_/rho_) - pDeltaT_ * ( (3*xF_.prevIter() - 4* xF_.oldTime() + xF_.oldTime().oldTime())/(2*deltaT_));
+//     }
+// }
 
 if (runTime_.timeIndex() == 0)
 {
@@ -48,7 +48,7 @@ if (runTime_.timeIndex() == 0)
     lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (lm_.prevIter() - lm_.oldTime())/(deltaT_));
     lm_ -= pDeltaT_*dampingCoeff()*lm_;
 
-    F_ += pDeltaT_*fvc::surfaceIntegrate((lmC_/rho_)*Sf_) - pDeltaT_*( (F_.prevIter() - F_.oldTime())/(deltaT_)) ;
+    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux()) - pDeltaT_*( (F_.prevIter() - F_.oldTime())/(deltaT_)) ;
 }
 
 else
@@ -58,5 +58,5 @@ else
     lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (3*lm_.prevIter() - 4*lm_.oldTime() + lm_.oldTime().oldTime())/(2*deltaT_));
     lm_ -= pDeltaT_*dampingCoeff()*lm_;
 
-    F_ += pDeltaT_*fvc::surfaceIntegrate((lmC_/rho_)*Sf_) - pDeltaT_*( (3*F_.prevIter() - 4*F_.oldTime() + F_.oldTime().oldTime())/(2*deltaT_));
+    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux())  - pDeltaT_*( (3*F_.prevIter() - 4*F_.oldTime() + F_.oldTime().oldTime())/(2*deltaT_));
 }

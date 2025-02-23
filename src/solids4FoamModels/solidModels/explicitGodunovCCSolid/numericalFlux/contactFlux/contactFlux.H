@@ -58,18 +58,91 @@ class contactFlux
     public numericalFlux
 {
     // Private data
+            const dynamicFvMesh& mesh_;
+            
             //- Linear moemntum
-            const volVectorField& lm_;
+            volVectorField& lm_;
+            
+            pointVectorField& lmN_;
 
             //- deformation tensor
-            const volTensorField& F_;
+            volTensorField& F_;
 
             //- 1st Piola-Kirchhoff stress tensor
-            const volTensorField& P_;
+            volTensorField& P_;
 
             solidMaterialModel& model_;
             operations& op_;
             mechanics& mech_;
+
+            gradientSchemes& grad_;
+            //-----------------------------
+            // Material face area
+            const surfaceScalarField& magSf_;
+
+            // Material face area normal vector
+            const surfaceVectorField& Sf_;
+
+            // Material normals
+            const surfaceVectorField N_;
+
+            // Density
+            const dimensionedScalar& rho_;
+            
+            // Gradient of cell linear momentum
+            volTensorField lmGrad_;
+
+            // First Piola Kirchhoff stress tensor
+            volVectorField Px_;
+            volVectorField Py_;
+            volVectorField Pz_;
+
+            // Gradients of first Piola Kirchhoff stress tensor
+            volTensorField PxGrad_;
+            volTensorField PyGrad_;
+            volTensorField PzGrad_;
+
+            //Creating fields for reconstruction
+            // Reconstruction of linear momentum
+            surfaceVectorField lm_M_;
+            surfaceVectorField lm_P_;
+
+            // Reconstruction of PK1 stresses
+            surfaceTensorField P_M_;
+            surfaceTensorField P_P_;
+
+            // Reconstruction of traction
+            surfaceVectorField t_M_;
+            surfaceVectorField t_P_;
+
+            // Creating fields for riemann solver
+            // Surface tensors
+            surfaceTensorField S_lm_;
+            surfaceTensorField S_t_;
+
+            // Contact traction
+            surfaceVectorField tC_;
+
+            // Contact linear momentum
+            surfaceVectorField lmC_;
+
+            // Volumetric fields
+            volVectorField t_b_;
+            volVectorField lm_b_;
+
+            //limiter fields
+            volVectorField phi_lm_;
+            volTensorField phi_P_;
+
+            // Creating fields for the constrained procedure
+            // Constrained class
+            interpolationSchemes interpolate_;
+
+            // Cell-averaged linear momentum
+            volVectorField lmR_;
+
+            // Local gradient of cell-averaged linear momentum
+            volTensorField lmRgrad_;
 
         // Fluxes
 
@@ -81,6 +154,10 @@ class contactFlux
 
 
     // Private Member Functions
+
+       void  reconstruction();
+
+       void curllFreeAlgorithm();
 
         //- Disallow default bitwise copy construct
         contactFlux(const contactFlux&);
@@ -106,13 +183,16 @@ public:
         contactFlux
         (
             Time& runTime,
+            const word& region,
             const dynamicFvMesh& mesh,
-            const volVectorField& lm,
-            const volTensorField& F,
-            const volTensorField& P,
+            volVectorField& lm,
+            pointVectorField& lmN,
+            volTensorField& F,
+            volTensorField& P,
             solidMaterialModel& model,
             operations& op,
-            mechanics& mech
+            mechanics& mech,
+            gradientSchemes& grad
         );
 
     // Destructor
