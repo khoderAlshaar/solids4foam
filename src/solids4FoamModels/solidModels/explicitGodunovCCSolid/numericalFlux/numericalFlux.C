@@ -50,7 +50,14 @@ Foam::numericalFlux::~numericalFlux()
 // ************************************************************************* //
 Foam::autoPtr<Foam::numericalFlux> Foam::numericalFlux::New
 (
-            Time& runTime
+    Time& runTime,
+    const dynamicFvMesh& mesh,
+    const volVectorField& lm,
+    const volTensorField& F,
+    const volTensorField& P,
+    solidMaterialModel& model,
+    operations& op,
+    mechanics& mech
 )
 {
     IOdictionary dict
@@ -65,7 +72,7 @@ Foam::autoPtr<Foam::numericalFlux> Foam::numericalFlux::New
             false  // Do not register
         )
     );
-        const dictionary& subDict = dict.subDict("divSchemes").subDict("numericalFlux");
+    const dictionary& subDict = dict.subDict("divSchemes").subDict("numericalFlux");
 
     word name = word(subDict.lookup("flux"));
 
@@ -85,5 +92,5 @@ Foam::autoPtr<Foam::numericalFlux> Foam::numericalFlux::New
             << exit(FatalError);
     }
 
-    return autoPtr<numericalFlux>(cstrIter()(runTime));
+    return autoPtr<numericalFlux>(cstrIter()(runTime, mesh, lm, F, P, model, op, mech));
 }

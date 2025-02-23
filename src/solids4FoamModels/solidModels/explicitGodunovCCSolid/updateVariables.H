@@ -44,6 +44,8 @@ t_P_ = P_P_ & N_;
 // Riemann solver
 S_lm_ = mech_.Smatrix_lm();
 S_t_ = mech_.Smatrix_t();
+
+flux().computeFlux();
 #include "riemannSolver.H"
 
 // Nodal linear momentum

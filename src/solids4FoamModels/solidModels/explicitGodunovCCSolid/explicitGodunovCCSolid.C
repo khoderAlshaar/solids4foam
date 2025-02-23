@@ -40,7 +40,7 @@ addToRunTimeSelectionTable(solidModel, explicitGodunovCCSolid, dictionary);
 
 
 // * * * * * * * * * * *  Private Member Functions * * * * * * * * * * * * * //
-void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux() const
+void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux() 
 {
     Info << "making Numerial Flux" <<endl;
     if (!numericalFluxPtr_.empty())
@@ -49,12 +49,17 @@ void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux() const
             << "pointer already set!" << abort(FatalError);
     }
 
-//    numericalFluxPtr_.set
-//     (
-//         // numericalFlux::New(runTime_)
-//         numericalFlux::New()
-//     );
-        numericalFluxPtr_ = numericalFlux::New(runTime_);
+        numericalFluxPtr_ = numericalFlux::New 
+        (       
+            runTime_,
+            mesh(),
+            lm_,
+            F_,
+            P_,
+            model_,
+            op_,
+            mech_
+        );
 
 }
 
@@ -151,15 +156,15 @@ bool explicitGodunovCCSolid::converged
 
 // * * * * * * * * * * * * * * * * Protected member functions  * * * * * * * * * * * * * * //
 
-Foam::numericalFlux& explicitGodunovCCSolid::flux()
-{
-    if (numericalFluxPtr_.empty())
-    {
-        makeNumericalFlux();
-    }
+// Foam::numericalFlux& explicitGodunovCCSolid::flux()
+// {
+//     if (numericalFluxPtr_.empty())
+//     {
+//         makeNumericalFlux();
+//     }
 
-    return numericalFluxPtr_();
-}
+//     return numericalFluxPtr_();
+// }
 
 
 
@@ -537,17 +542,12 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     Info<< "Frequency at which info is printed: every " << infoFrequency()
         << " time-steps" << endl;
 
-
-    // makeNumericalFlux();
-        // autoPtr<numericalFlux> dbnsFluxPtr = numericalFlux::New();
-        //     numericalFlux& dbnsFlux = dbnsFluxPtr();
-    // numericalFluxPtr_ = numericalFlux::New(); // Initialize flux_ here
 }
 
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-const Foam::numericalFlux& explicitGodunovCCSolid::flux() const
+Foam::numericalFlux& explicitGodunovCCSolid::flux() 
 {
     if (numericalFluxPtr_.empty())
     {
@@ -560,10 +560,6 @@ const Foam::numericalFlux& explicitGodunovCCSolid::flux() const
 
 bool explicitGodunovCCSolid::evolve()
 {
-    flux().computeFlux();
-    // makeNumericalFlux();
-    //   autoPtr<numericalFlux>  FluxPtr_ = numericalFlux::New(); // Initialize flux_ here
-
 
 
     // dbnsFlux.sayHello();

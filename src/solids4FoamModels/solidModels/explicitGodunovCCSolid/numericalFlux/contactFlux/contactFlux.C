@@ -39,11 +39,48 @@ namespace numericalFluxs
 
 contactFlux::contactFlux
 (
-    Time& runTime
+    Time& runTime,
+    const dynamicFvMesh& mesh,
+    const volVectorField& lm,
+    const volTensorField& F,
+    const volTensorField& P,
+    solidMaterialModel& model,
+    operations& op,
+    mechanics& mech
 )
 :
-    numericalFlux(runTime)   
-    // numericalFlux()   
+    numericalFlux(runTime),
+    lm_(lm),
+    F_(F),
+    P_(P),
+    model_(model),
+    op_(op),
+    mech_(mech),
+    lmFlux_
+    (
+        IOobject
+        (
+            "lmFlux",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        (linearInterpolate(P_) & mesh.Sf())
+    ),
+    FFlux_
+    (
+        IOobject
+        (
+            "FFlux",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+       ((1/model_.density())*linearInterpolate(lm) * mesh.Sf())
+    )
+
 {
 
     Info << "Hello from contactFlux constructor" << endl;
@@ -62,6 +99,7 @@ contactFlux::~contactFlux()
 void contactFlux::computeFlux()
 {
     Info << "Compute flux using Contact flux" << endl;
+    // Info << lm_ <<endl;
     
 }
 

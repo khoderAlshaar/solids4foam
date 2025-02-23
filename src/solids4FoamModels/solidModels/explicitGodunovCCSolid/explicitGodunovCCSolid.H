@@ -274,7 +274,7 @@ class explicitGodunovCCSolid
     // Private Member Functions
 
         //- Make the numericalFlux
-        void makeNumericalFlux() const;
+        void makeNumericalFlux();
 
     //- Check for solution convergence
     bool converged
@@ -295,7 +295,7 @@ protected:
 
 
         //- Return non-const reference to the mechanical model
-        numericalFlux& flux();
+        // numericalFlux& flux();
     // Protected member functions
 
         //- Return nonlinear geometry enumerator
@@ -340,7 +340,7 @@ public:
         // Edit
 
             //- Return const reference to the numericalFlux 
-            const numericalFlux& flux() const;
+            numericalFlux& flux() ;
 
             //- Evolve the solid solver and solve the mathematical model
             virtual bool evolve();

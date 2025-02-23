@@ -41,6 +41,8 @@ SourceFiles
 #include "runTimeSelectionTables.H"
 
 
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam
 {
@@ -56,6 +58,27 @@ class contactFlux
     public numericalFlux
 {
     // Private data
+            //- Linear moemntum
+            const volVectorField& lm_;
+
+            //- deformation tensor
+            const volTensorField& F_;
+
+            //- 1st Piola-Kirchhoff stress tensor
+            const volTensorField& P_;
+
+            solidMaterialModel& model_;
+            operations& op_;
+            mechanics& mech_;
+
+        // Fluxes
+
+            //- Density flux
+            surfaceVectorField lmFlux_;
+
+            //- Velocity flux
+            surfaceTensorField FFlux_;
+
 
     // Private Member Functions
 
@@ -82,7 +105,14 @@ public:
         //- Construct from components
         contactFlux
         (
-            Time& runTime
+            Time& runTime,
+            const dynamicFvMesh& mesh,
+            const volVectorField& lm,
+            const volTensorField& F,
+            const volTensorField& P,
+            solidMaterialModel& model,
+            operations& op,
+            mechanics& mech
         );
 
     // Destructor
@@ -92,11 +122,40 @@ public:
 
     // Member Functions
 
-        // Access
+        // Return fluxes
 
-        // Edit
+            //- Return density flux
+            virtual const surfaceVectorField& lmFlux() const
+            {
+                return lmFlux_;
+            }
 
-            //- Evolve the solid model
+            //- Return velocity flux
+            virtual const surfaceTensorField& FFlux() const
+            {
+                return FFlux_;
+            }
+
+
+       // Return residuals
+
+            //- Return density equation residual
+            virtual tmp<vectorField> lmResidual() const
+            {
+                return fvc::div(lmFlux_)().internalField();
+            }
+
+            //- Return momentum equation flux
+            virtual tmp<tensorField> FResidual() const
+            {
+                return fvc::div(FFlux_)().internalField();
+            }
+
+
+
+        // Update fluxes based on current state
+
+            //- Compute flux
             virtual void computeFlux();
 
 };

@@ -40,10 +40,17 @@ SourceFiles
 #define numericalFlux_H
 
 #include "fvMesh.H"
+#include "dynamicFvMesh.H"
 #include "volFields.H"
 #include "runTimeSelectionTables.H"
 #include "basicThermo.H"
 
+
+#include "solidMaterialModel.H" //! to be changed with solidMaterialModel to work with solids4Foam
+#include "mechanics.H"
+#include "operations.H"
+#include "gradientSchemes.H"
+#include "interpolationSchemes.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -84,9 +91,16 @@ public:
         numericalFlux,
         state,
         (
-            Time& runTime
+            Time& runTime,
+            const dynamicFvMesh& mesh,
+            const volVectorField& lm,
+            const volTensorField& F,
+            const volTensorField& P,
+            solidMaterialModel& model,
+            operations& op,
+            mechanics& mech
         ),
-        (runTime)
+        (runTime, mesh, lm, F, P, model, op, mech)
     );
 #endif
 
@@ -103,26 +117,37 @@ public:
     //- Selector
     static autoPtr<numericalFlux> New
     (
-            Time& runTime
+        Time& runTime,
+        const dynamicFvMesh& mesh,
+        const volVectorField& lm,
+        const volTensorField& F,
+        const volTensorField& P,
+        solidMaterialModel& model,
+        operations& op,
+        mechanics& mech
     );
-
 
     //- Destructor
     virtual ~numericalFlux();
 
 
-    // Member functions
-
-        //- Return mesh reference
-        // const fvMesh& mesh() const
-        // {
-        //     return mesh_;
-        // }
 
         // Return fluxes
 
+            //- Return linear momentum  flux
+            virtual const surfaceVectorField& lmFlux() const = 0;
+
+            //- Return deformation tensor flux
+            virtual const surfaceTensorField& FFlux() const = 0;
+
 
        // Return residuals
+
+            //- Return linear momentum equation residual
+            virtual tmp<vectorField> lmResidual() const = 0;
+
+            //- Return deformation tensor equation flux
+            virtual tmp<tensorField> FResidual() const = 0;
 
 
         // Update fluxes based on current state
