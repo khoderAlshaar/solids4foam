@@ -44,6 +44,7 @@ $(explicitGodunovCCSolid)/schemes/gradientSchemes/gradientSchemes.C
 $(explicitGodunovCCSolid)/schemes/interpolationSchemes/interpolationSchemes.C
 $(explicitGodunovCCSolid)/schemes/angularMomentum/angularMomentum.C
 $(explicitGodunovCCSolid)/numericalFlux/contactFlux/contactFlux.C
+$(explicitGodunovCCSolid)/numericalFlux/roeFlux/roeFlux.C
 $(explicitGodunovCCSolid)/numericalFlux/numericalFlux.C
 
 

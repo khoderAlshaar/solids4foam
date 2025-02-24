@@ -104,8 +104,6 @@ Foam::autoPtr<Foam::numericalFlux> Foam::numericalFlux::New
 
     word name = word(subDict.lookup("flux"));
 
-    // word name = "contact";
-
     Info<< "Selecting numericFlux " << name << endl;
 
     stateConstructorTable::iterator cstrIter =
