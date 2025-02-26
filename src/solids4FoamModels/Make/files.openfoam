@@ -57,6 +57,7 @@ fluidModels/oneWayFsiFluid/oneWayFsiFluid.C
 fluidModels/pimpleFluid/pimpleFluid.C
 fluidModels/pimpleOversetFluid/pimpleOversetFluid.C
 fluidModels/sonicLiquidFluid/sonicLiquidFluid.C
+fluidModels/sonicFluid/sonicFluid.C
 
 fluidSolidInterfaces/fluidSolidInterface/fluidSolidInterface.C
 fluidSolidInterfaces/AitkenCouplingInterface/AitkenCouplingInterface.C
