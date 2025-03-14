@@ -4,7 +4,7 @@
         fvm::ddt(rho, e) + fvm::div(phi, e)
       + fvc::ddt(rho, K) + fvc::div(phi, K)
       + fvc::div(fvc::absolute(phi/fvc::interpolate(rho), U), p, "div(phiv,p)")
-      - fvm::laplacian(turbulence->alphaEff(), e)
+      - fvm::laplacian(turbulence_->alphaEff(), e)
      ==
         options()(rho, e)
     );
@@ -19,3 +19,4 @@
 
     thermo_.correct();
 }
+

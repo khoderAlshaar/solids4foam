@@ -623,6 +623,8 @@ Foam::vector Foam::fluidSolidInterface::totalForceOnInterface
 
 void Foam::fluidSolidInterface::setDeltaT(Time& runTime)
 {
+        Info<< "setDeltaT() from fluidSolidInterface" <<endl;
+
     // For now, the fluid sets the time-step
     fluid().setDeltaT(runTime);
     // solid().setDeltaT(runTime);

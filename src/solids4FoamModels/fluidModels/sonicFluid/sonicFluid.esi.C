@@ -89,7 +89,8 @@ void sonicFluid::CorrectFlux()
         new volScalarField
         (
                 "divrhoU",
-                fvc::div(phi())
+                // fvc::div(phi())
+                fvc::div(fvc::absolute(phi(), rho_, U()))
         )
     );
 
@@ -99,22 +100,6 @@ void sonicFluid::CorrectFlux()
     // Calculate absolute flux
     // from the mapped surface velocity
     phi() = mesh().Sf() & rhoUf_();
-
-    // Define volScalarField to hold phi
-    // to pass to compressible CorrectPhi function
-    // const volScalarField psi
-    // (
-    //      IOobject
-    //      (
-    //             "psi",
-    //             runTime().timeName(),
-    //             mesh(),
-    //             IOobject::NO_READ,
-    //             IOobject::NO_WRITE
-    //      ),
-    //      mesh(),
-    //      psi_
-    // );
 
     CorrectPhi
     (
@@ -252,10 +237,20 @@ sonicFluid::sonicFluid
         psiThermo::New(mesh())
     ),
     thermo_(pThermo_()),
-     K_
-     (
+    turbulence_
+    (
+        compressible::turbulenceModel::New
+        (
+            rho_,
+            U(),
+            phi(),
+            thermo_
+        )
+    ),
+    K_
+    (
         "K",
-         0.5*magSqr(U())
+        0.5*magSqr(U())
     ),
 
     e_(thermo_.he()),
@@ -278,14 +273,37 @@ sonicFluid::sonicFluid
         ),
         thermo_.rho()
     ),
+    rhoUf_(),
+    rAU_
+    (
+        IOobject
+        (
+            "rAU",
+            runTime.timeName(),
+            mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh(),
+        runTime.deltaT(),
+        calculatedFvPatchScalarField::typeName
+    ),
     
-    MRF(mesh()),
-
+    correctPhi_(pimple().dict().lookupOrDefault("correctPhi", false)),
+    checkMeshCourantNo_
+    (
+        pimple().dict().lookupOrDefault("checkMeshCourantNo", false)
+    ),
+    moveMeshOuterCorrectors_
+    (
+        pimple().dict().lookupOrDefault("moveMeshOuterCorrectors", false)
+    ),
 
     cumulativeContErr_(0)
  { 
 
-    // thermo_.validate(args.executable(), "e");
+    mesh().setFluxRequired(p().name());
+    turbulence_->validate();
 
     p() = thermo_.p();
 
@@ -299,13 +317,11 @@ sonicFluid::sonicFluid
 
     phi() = linearInterpolate(rho_*U()) & mesh().Sf();
 
-    mesh().setFluxRequired(p().name());
-
     if (mesh().dynamic())
     {
         Info<< "Constructing face momentum rhoUf" << endl;
 
-        rhoUf_.set
+        rhoUf_.reset
         (
             new surfaceVectorField
             (
@@ -320,16 +336,13 @@ sonicFluid::sonicFluid
                 fvc::interpolate(rho_*U())
             )
         );
+        rhoUf_().oldTime();
+
     }
-
-        turbulence_ = compressible::turbulenceModel::New
-    (
-        rho_,
-        U(),
-        phi(),
-        thermo_
-    );
-
+    const fvMesh& mesh = this->mesh();
+    const surfaceScalarField& phi = this->phi();
+    const  volScalarField rho = rho_; 
+    #include "compressibleCourantNo.H"
     
     if (U().nOldTimes())
     {
@@ -345,7 +358,6 @@ sonicFluid::sonicFluid
         }
     }
 
-    turbulence_->validate();
 
 }
 
@@ -388,23 +400,66 @@ bool sonicFluid::evolve()
 {
     Info<< "Evolving fluid model: " << this->type() << endl;
 
-    // dynamicFvMesh& mesh = this->mesh();
+    // Take references
+    const Time& runTime = fluidModel::runTime();
+    dynamicFvMesh& mesh = this->mesh();
+    pimpleControl& pimple = this->pimple();
+    volVectorField& U = this->U();
+    volScalarField& p = this->p();
+    surfaceScalarField& phi = this->phi();
+    autoPtr<surfaceVectorField>& rhoUf = rhoUf_;
+    volScalarField rho = rho_;    
+    scalar& cumulativeContErr = cumulativeContErr_;
+    const bool correctPhi = correctPhi_;
+    const bool checkMeshCourantNo = checkMeshCourantNo_;
+    const bool moveMeshOuterCorrectors = moveMeshOuterCorrectors_;
 
-    // bool meshChanged = false;
+    // --- Pressure-velocity PIMPLE corrector loop
+    while (pimple.loop())
+    {
+    if (pimple.firstIter() || moveMeshOuterCorrectors)
+            {
+                // fvModels not added yet
+                // fvModels.preUpdateMesh();
 
-    // Info <<"runTime().deltaT().value()" <<runTime().deltaT().value()<<endl;
+                // Ideally we would not need a specific FSI mesh update function
+                // Hopefully we can remove the need for it soon
+                if (fluidModel::fsiMeshUpdate())
+                {
+                    // The FSI interface is in charge of calling mesh.update()
+                    fluidModel::fsiMeshUpdateChanged();
+                }
+                else
+                {
+                    // Do any mesh changes
+                    mesh.controlledUpdate();
+                }
 
-//     if (fluidModel::fsiMeshUpdate())
-//     {
-//         // The FSI interface is in charge of calling mesh.update()
-//         meshChanged = fluidModel::fsiMeshUpdateChanged();
-//     }
-//     else
-//     {
-//         meshChanged = mesh.update();
-//         reduce(meshChanged, orOp<bool>());
-//     }
+                if (mesh.changing())
+                {
+                //     // MRF not added yet
+                //     // MRF.update();
 
+                //     if (correctPhi)
+                //     {
+                //         // Calculate absolute flux
+                //         // from the mapped surface velocity
+                //         phi = mesh.Sf() & rhoUf();
+
+                //         #include "correctPhi.esi.H"
+
+                //         // Make the fluxes relative to the mesh-motion
+                //         fvc::makeRelative(phi, rho, U);
+                //     }
+
+                //     if (checkMeshCourantNo)
+                //     {
+                //         #include "meshCourantNo.H"
+                //     }
+                // }
+            }
+
+    }
 //     if (meshChanged)
 //     {
 //         const Time& runTime = fluidModel::runTime();
@@ -416,45 +471,45 @@ bool sonicFluid::evolve()
 //         pimple().dict().lookupOrDefault("correctPhi", false)
 //     );
 
+//      Info<< "CorrectFlux(); "<<endl;
+
 //     if (correctPhi && meshChanged)
 //     {
 //         CorrectFlux();
 //     }
 
-//     // Make the fluxes relative to the mesh motion
-//     fvc::makeRelative(phi(), rho_, U());
+    // // Make the fluxes relative to the mesh motion
+    // fvc::makeRelative(phi(), rho_, U());
 
-    // Calculate CourantNo
-    compressibleCourantNo();
+    // // Calculate CourantNo
+    // compressibleCourantNo();
         
-        // solveRhoEqn();
-    
-    solve(fvm::ddt(rho_) + fvc::div(phi()));
-   
-    // Pressure-velocity corrector
-    while (pimple().loop())
-    {
+    //     solveRhoEqn();
+       
+    // // Pressure-velocity corrector
+    // while (pimple().loop())
+    // {
 
-            #include "UEqn.H"
-            #include "EEqn.H"
-        // --- Pressure corrector loop
-        while (pimple().correct())
-        {
-            #include "pEqn.H"
+    //         #include "UEqn.H"
+    //         #include "EEqn.H"
+    //     // --- Pressure corrector loop
+    //     while (pimple().correct())
+    //     {
+    //         #include "pEqn.H"
 
-        }
+    //     }
 
-        if (pimple().turbCorr())
-        {
-            turbulence_->correct();
-        }
+    //     if (pimple().turbCorr())
+    //     {
+    //         turbulence_->correct();
+    //     }
      
-        // tUEqn.clear();
+    //     // tUEqn.clear();
 
-    }
+    // }
 
-    rho_ = thermo_.rho();
-    // Make the fluxes absolute to the mesh motion
+    // rho_ = thermo_.rho();
+    // // Make the fluxes absolute to the mesh motion
     // fvc::makeAbsolute(phi(), rho_, U());
 
     // Print variables for inspection
@@ -462,18 +517,18 @@ bool sonicFluid::evolve()
     // scalar deltaRho = max(rho_).value() - min(rho_).value();
     // scalar refDeltaRho = 0.01*rho0_.value();
 
-    // Info variable values
-    Info<< nl << "Density: min " << min(rho_).value()
-        << " max " << max(rho_).value() << endl;
+    // // Info variable values
+    // Info<< nl << "Density: min " << min(rho_).value()
+    //     << " max " << max(rho_).value() << endl;
 
-    // Info<< "Density variation: " << deltaRho
-    //     << " ref: " << refDeltaRho << endl;
+    // // Info<< "Density variation: " << deltaRho
+    // //     << " ref: " << refDeltaRho << endl;
 
-    Info<< "Pressure: min " << min(p()).value()
-        << " max " << max(p()).value() << endl;
+    // Info<< "Pressure: min " << min(p()).value()
+    //     << " max " << max(p()).value() << endl;
 
-    Info<< "Velocity: min " << min(mag(U())).value()
-        << " max " << max(mag(U())).value() << nl << nl;
+    // Info<< "Velocity: min " << min(mag(U())).value()
+    //     << " max " << max(mag(U())).value() << nl << nl;
 
     return 0;
 }
