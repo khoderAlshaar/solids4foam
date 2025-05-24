@@ -35,9 +35,11 @@ gradSchemes
 
 divSchemes
 {
-    default                 none;
-    div(sigma)              Gauss linear;
-    div((impK*grad(D)))     Gauss linear;
+    default            Gauss linear;
+    numericalFlux
+    {
+        flux    roe;
+    }
 }
 
 laplacianSchemes

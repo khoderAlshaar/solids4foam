@@ -126,7 +126,7 @@ volVectorField interpolationSchemes::surfaceToVol
             if (lmN_.boundaryField().types()[patchID] == "fixedValue")
             {
                 const label& faceID =
-                    mesh_.boundary()[patchID].start() + facei;
+                    mesh_.boundary()[patchID].patch().start()   + facei;
 
                 forAll(mesh_.faces()[faceID], nodei)
                 {
@@ -150,7 +150,11 @@ volVectorField interpolationSchemes::surfaceToVol
         }
     }
 
+#ifdef OPENFOAM_NOT_EXTEND
     U.primitiveFieldRef() /= w.internalField();
+#else
+    U.internalField() /= w.internalField();
+#endif
 
     tvf_v.clear();
     tvf_s.clear();
@@ -160,6 +164,7 @@ volVectorField interpolationSchemes::surfaceToVol
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#ifdef OPENFOAM_NOT_EXTEND
 
 template<class Type>
 void interpolationSchemes::pushUntransformedData
@@ -240,7 +245,7 @@ void interpolationSchemes::addSeparated
         }
     }
 }
-
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -255,7 +260,7 @@ void interpolationSchemes::volToPoint
     const fvMesh& mesh = mesh_;
     const volVectorField& C = mesh.C();
 
-
+#ifdef OPENFOAM_NOT_EXTEND
     if( Pstream::parRun() )
     {
         pointScalarField sum
@@ -301,10 +306,12 @@ void interpolationSchemes::volToPoint
         pointConstraints::syncUntransformedData(mesh, Un, plusEqOp<vector>());
         addSeparated(Un);
         pushUntransformedData(Un);
+
     }
 
     else
     {
+#endif
         forAll (mesh.pointCells(), nodeID)
         {
             vector sum = vector::zero;
@@ -325,7 +332,9 @@ void interpolationSchemes::volToPoint
 
             Un[nodeID] = sum / weights;
         }
+#ifdef OPENFOAM_NOT_EXTEND        
     }
+#endif
 
 }
 
@@ -381,7 +390,7 @@ surfaceVectorField interpolationSchemes::pointToSurface
     {
         forAll(mesh_.boundary()[patchID], facei)
         {
-            const label& faceID = mesh_.boundary()[patchID].start() + facei;
+            const label& faceID = mesh_.boundary()[patchID].patch().start()   + facei;
             sum = vector::zero;
             weights = 0.0;
 
@@ -395,7 +404,12 @@ surfaceVectorField interpolationSchemes::pointToSurface
                 // weights += 1.0;
             }
 
+#ifdef OPENFOAM_NOT_EXTEND
             Uf.boundaryFieldRef()[patchID][facei] = sum/weights;
+#else
+            Uf.boundaryField()[patchID][facei] = sum/weights;
+
+#endif
         }
     }
 

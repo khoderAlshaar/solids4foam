@@ -66,7 +66,7 @@ roeFlux::roeFlux
     magSf_(mesh_.magSf()),
     Sf_(mesh_.Sf()),
     // Creating mesh normal fields
-    N_((Sf_ / mesh_.magSf()).ref()),
+    N_((Sf_ / mesh_.magSf()) ),
 
     rho_(model_.density()),
 
@@ -103,7 +103,7 @@ roeFlux::roeFlux
         IOobject("t_M", mesh_),
         P_M_ & N_
     ),
-    t_P_((P_P_ & N_).ref()),
+    t_P_((P_P_ & N_) ),
 
     S_lm_(mech_.Smatrix_lm()),
     S_t_(mech_.Smatrix_t()),
@@ -464,12 +464,19 @@ forAll(mesh_.boundary(), patchi)
 
         forAll(mesh_.boundary()[patchi], facei)
         {
+#ifdef OPENFOAM_NOT_EXTEND
             roeFlux_lm_.boundaryFieldRef()[patchi][facei] =  
                 t_b_.boundaryField()[patchi][facei];
 
             roeFlux_F_.boundaryFieldRef()[patchi][facei] =  (1/rho_.value())*
                 ( lm_b_.boundaryField()[patchi][facei] * N_.boundaryField()[patchi][facei]);
-    
+#else
+            roeFlux_lm_.boundaryField()[patchi][facei] =  
+                t_b_.boundaryField()[patchi][facei];
+
+            roeFlux_F_.boundaryField()[patchi][facei] =  (1/rho_.value())*
+                ( lm_b_.boundaryField()[patchi][facei] * N_.boundaryField()[patchi][facei]);
+#endif
         }
 }
 
@@ -630,6 +637,7 @@ void roeFlux::computeFlux()
     reconstruction();
 
 // Acoustic Riemann solver
+#ifdef OPENFOAM_NOT_EXTEND
 S_lm_.oriented() = false;
 S_t_.oriented() = false;
 t_M_.oriented() = false;
@@ -642,6 +650,7 @@ F_M_.oriented() = false;
  
 P_P_.oriented() = false;
 P_M_.oriented() = false;
+#endif
 
  lm_M_hat_ = R_ & lm_M_;
  lm_P_hat_ = R_ & lm_P_;
@@ -723,12 +732,19 @@ forAll(mesh_.boundary(), patchi)
 
         forAll(mesh_.boundary()[patchi], facei)
         {
+#ifdef OPENFOAM_NOT_EXTEND
             roeFlux_lm_.boundaryFieldRef()[patchi][facei] =  
                 t_b_.boundaryField()[patchi][facei];
 
             roeFlux_F_.boundaryFieldRef()[patchi][facei] =  (1/rho_.value())*
                 ( lm_b_.boundaryField()[patchi][facei] * N_.boundaryField()[patchi][facei]);
-    
+#else
+            roeFlux_lm_.boundaryField()[patchi][facei] =  
+                t_b_.boundaryField()[patchi][facei];
+
+            roeFlux_F_.boundaryField()[patchi][facei] =  (1/rho_.value())*
+                ( lm_b_.boundaryField()[patchi][facei] * N_.boundaryField()[patchi][facei]);
+#endif
         }
 }
 
