@@ -69,6 +69,7 @@ SourceFiles
 #ifndef tractionLinearMomentumFvPatchVectorField_H
 #define tractionLinearMomentumFvPatchVectorField_H
 
+#include "fvPatchFields.H"
 #include "fixedValueFvPatchFields.H"
 #include "fixedValueFvsPatchFields.H"
 #include "addToRunTimeSelectionTable.H"

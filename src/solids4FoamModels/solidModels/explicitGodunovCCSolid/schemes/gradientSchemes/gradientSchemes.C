@@ -114,8 +114,12 @@ void gradientSchemes::distanceMatrix
 
         U.correctBoundaryConditions();
     }
-
+#ifdef OPENFOAM_NOT_EXTEND
     U.primitiveFieldRef() = inv(U.internalField());
+#else
+    U.internalField() = inv(U.internalField());
+#endif
+
 }
 
 
@@ -170,7 +174,7 @@ void gradientSchemes::distanceMatrixLocal
             // if (lmN_.boundaryField().types()[patchID] == "fixedValue")
             // {
             //     const label& faceID =
-            //         mesh_.boundary()[patchID].start() + facei;
+            //         mesh_.boundary()[patchID].patch().start()  + facei;
 
             //     forAll(mesh_.faces()[faceID], nodei)
             //     {
@@ -191,8 +195,12 @@ void gradientSchemes::distanceMatrixLocal
             // }
         }
     }
-
+#ifdef OPENFOAM_NOT_EXTEND
     Ainv.primitiveFieldRef() = inv(dCd.internalField());
+#else
+    Ainv.internalField() = inv(dCd.internalField());
+#endif
+
 }
 
 
@@ -489,7 +497,7 @@ volTensorField gradientSchemes::localGradient
             if (lmN_.boundaryField().types()[patchID] == "fixedValue")
             {
                 const label& faceID =
-                    mesh_.boundary()[patchID].start() + facei;
+                    mesh_.boundary()[patchID].patch().start()  + facei;
 
                 forAll(mesh_.faces()[faceID], nodei)
                 {
@@ -575,7 +583,7 @@ void gradientSchemes::reconstruct
         {
             const label& bCellID =
                 mesh_.boundaryMesh()[patchID].faceCells()[facei];
-
+#ifdef OPENFOAM_NOT_EXTEND
             U.boundaryFieldRef()[patchID][facei] =
                 U[bCellID] + ( Ugrad[bCellID]
               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
@@ -583,6 +591,15 @@ void gradientSchemes::reconstruct
             Um.boundaryFieldRef()[patchID][facei] =
                 U[bCellID] + ( Ugrad[bCellID]
               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+#else
+            U.boundaryField()[patchID][facei] =
+                U[bCellID] + ( Ugrad[bCellID]
+              & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+
+            Um.boundaryField()[patchID][facei] =
+                U[bCellID] + ( Ugrad[bCellID]
+              & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+#endif
         }
     }
 }
@@ -619,10 +636,15 @@ void gradientSchemes::reconstruct
         {
             const label& bCellID =
                 mesh_.boundaryMesh()[patchID].faceCells()[facei];
-
+#ifdef OPENFOAM_NOT_EXTEND
             Um.boundaryFieldRef()[patchID][facei] =
                 U[bCellID] + (Ugrad[bCellID]
               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+#else
+            Um.boundaryField()[patchID][facei] =
+                U[bCellID] + (Ugrad[bCellID]
+              & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+#endif
         }
     }
 }
@@ -724,11 +746,19 @@ void gradientSchemes::reconstruct
                 Uz[bCellID] + (UzGrad[bCellID]
               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
 
+#ifdef OPENFOAM_NOT_EXTEND
             U.boundaryFieldRef()[patchID][facei] =
                 tensor(reconsX, reconsY, reconsZ);
 
             Um.boundaryFieldRef()[patchID][facei] =
                 tensor(reconsX, reconsY, reconsZ);
+#else
+            U.boundaryField()[patchID][facei] =
+                tensor(reconsX, reconsY, reconsZ);
+
+            Um.boundaryField()[patchID][facei] =
+                tensor(reconsX, reconsY, reconsZ);
+#endif
         }
     }
 

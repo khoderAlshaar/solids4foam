@@ -42,9 +42,11 @@ SourceFiles
 #include "volFields.H"
 #include "surfaceFields.H"
 #include "pointFields.H"
-#include "pointConstraints.H"
 #include "volPointInterpolation.H"
 #include "fvPatchFields.H"
+#ifdef OPENFOAM_NOT_EXTEND
+    #include "pointConstraints.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -106,6 +108,7 @@ public:
 
             //- Helper: push master point data to collocated points
             //  (Borrowed from volPointInterpolation class in OpenFOAM)
+            #ifdef OPENFOAM_NOT_EXTEND
             template<class Type>
             void pushUntransformedData(List<Type>&) const;
 
@@ -116,6 +119,8 @@ public:
             (
                 GeometricField<Type, pointPatchField, pointMesh>&
             ) const;
+
+            #endif
 
             // Volume to point interpolation for vectorField
             void volToPoint

@@ -18,6 +18,14 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "movingDisplacementNodalLinearMomentumPointPatchVectorField.H"
+#include "addToRunTimeSelectionTable.H"
+#include "transformField.H"
+#include "pointPatchFields.H"
+#include "pointBoundaryMesh.H"
+#include "pointMesh.H"
+#ifdef OPENFOAM_NOT_EXTEND
+    #include "Time.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -53,7 +61,7 @@ movingDisplacementNodalLinearMomentumPointPatchVectorField
     uMax_(dict.lookup("displacement")),
     tEnd_(readScalar(dict.lookup("endTime")))
 {
-    pointPatchVectorField::operator=(vectorField("value", dict, p.size()));
+    fixedValuePointPatchVectorField::operator=(vectorField("value", dict, p.size()));
     updateCoeffs();
 }
 
@@ -64,40 +72,46 @@ movingDisplacementNodalLinearMomentumPointPatchVectorField
     const movingDisplacementNodalLinearMomentumPointPatchVectorField& ptf,
     const pointPatch& p,
     const DimensionedField<vector, pointMesh>& iF,
-    const pointPatchFieldMapper& mapper
+    const PointPatchFieldMapper& mapper
 )
 :
-    fixedValuePointPatchVectorField(ptf, p, iF, mapper),
+    fixedValuePointPatchVectorField(p, iF),
+#ifdef OPENFOAM_NOT_EXTEND
+    rho_(mapper(ptf.rho_)),
+    uMax_(mapper(ptf.uMax_)),
+    tEnd_(mapper(ptf.tEnd_))
+#else
+     rho_(ptf.rho_),
+     uMax_(ptf.uMax_),
+     tEnd_(ptf.tEnd_)
+#endif
+{}
+
+#ifndef OPENFOAM_ORG
+movingDisplacementNodalLinearMomentumPointPatchVectorField::
+movingDisplacementNodalLinearMomentumPointPatchVectorField
+(
+    const movingDisplacementNodalLinearMomentumPointPatchVectorField& ptf
+)
+:
+    fixedValuePointPatchVectorField(ptf),
     rho_(ptf.rho_),
     uMax_(ptf.uMax_),
     tEnd_(ptf.tEnd_)
 {}
-
-
-movingDisplacementNodalLinearMomentumPointPatchVectorField::
-movingDisplacementNodalLinearMomentumPointPatchVectorField
-(
-    const movingDisplacementNodalLinearMomentumPointPatchVectorField& rifvpvf
-)
-:
-    fixedValuePointPatchVectorField(rifvpvf),
-    rho_(rifvpvf.rho_),
-    uMax_(rifvpvf.uMax_),
-    tEnd_(rifvpvf.tEnd_)
-{}
-
+#endif
 
 movingDisplacementNodalLinearMomentumPointPatchVectorField::
 movingDisplacementNodalLinearMomentumPointPatchVectorField
 (
-    const movingDisplacementNodalLinearMomentumPointPatchVectorField& rifvpvf,
+    const movingDisplacementNodalLinearMomentumPointPatchVectorField& ptf,
     const DimensionedField<vector, pointMesh>& iF
 )
 :
-    fixedValuePointPatchVectorField(rifvpvf, iF),
-    rho_(rifvpvf.rho_),
-    uMax_(rifvpvf.uMax_),
-    tEnd_(rifvpvf.tEnd_)
+    fixedValuePointPatchVectorField(ptf, iF),
+    rho_(ptf.rho_),
+    uMax_(ptf.uMax_),
+    tEnd_(ptf.tEnd_)
 {}
 
 
@@ -105,7 +119,7 @@ movingDisplacementNodalLinearMomentumPointPatchVectorField
 
 void movingDisplacementNodalLinearMomentumPointPatchVectorField::rmap
 (
-    const pointPatchVectorField& ptf,
+    const pointPatchField<vector>& ptf,
     const labelList& addr
 )
 {
