@@ -54,7 +54,7 @@ Author
 #include "Random.H"
 #include "twoDPointCorrector.H"
 #include "unitConversion.H"
-#ifdef OPENFOAMM_NOT_EXTEND
+#ifdef OPENFOAM_NOT_EXTEND
     #include "primitiveMeshTools.H"
 #endif
 
@@ -441,9 +441,13 @@ int main(int argc, char *argv[])
         // Move the mesh
         Info<< "Applying the perturbation to the points" << endl;
         mesh.movePoints(newPoints);
-        #ifdef OPENFOAM_COM
+#ifdef OPENFOAM_COM
+    #if (OPENFOAM >= 2112)
         mesh.setPhi()->writeOpt() = IOobject::NO_WRITE;
-        #endif
+    #else
+        mesh.setPhi().writeOpt() = IOobject::NO_WRITE;
+    #endif
+#endif
 
         // Check for negative or small cell volumes
         const scalarField& VI = mesh.V();

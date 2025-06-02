@@ -78,10 +78,15 @@ functions
     }
     fsiConvData
     {
-        type fsiConvergenceData;        
+        type fsiConvergenceData;
         region fluid;
     }
 
+}
+
+DebugSwitches
+{
+    elasticWallPressure  1;
 }
 
 DebugSwitches
