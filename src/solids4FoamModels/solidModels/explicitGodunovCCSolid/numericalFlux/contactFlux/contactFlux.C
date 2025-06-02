@@ -66,7 +66,7 @@ contactFlux::contactFlux
     magSf_(mesh_.magSf()),
     Sf_(mesh_.Sf()),
     // Creating mesh normal fields
-    N_((Sf_ / mesh_.magSf()).ref()),
+    N_((Sf_ / mesh_.magSf())),
 
     rho_(model_.density()),
 
@@ -103,7 +103,7 @@ contactFlux::contactFlux
         IOobject("t_M", mesh_),
         P_M_ & N_
     ),
-    t_P_((P_P_ & N_).ref()),
+    t_P_((P_P_ & N_)),
 
     S_lm_(mech_.Smatrix_lm()),
     S_t_(mech_.Smatrix_t()),
@@ -244,12 +244,14 @@ void contactFlux::computeFlux()
     reconstruction();
 
 // Acoustic Riemann solver
+#ifdef OPENFOAM_NOT_EXTEND        
 S_lm_.oriented() = false;
 S_t_.oriented() = false;
 t_M_.oriented() = false;
 t_P_.oriented() = false;
 lm_P_.oriented() = false;
 lm_M_.oriented() = false;
+#endif
 
 tC_ = 0.5*(t_M_+t_P_) + (0.5*S_lm_ & (lm_P_ - lm_M_));
 lmC_ = 0.5*(lm_M_+lm_P_) + (0.5*S_t_ & (t_P_ - t_M_));
@@ -363,19 +365,28 @@ forAll(mesh_.boundary(), patchi)
     // {
         forAll(mesh_.boundary()[patchi], facei)
         {
+            
+#ifdef OPENFOAM_NOT_EXTEND        
             lmC_.boundaryFieldRef()[patchi][facei] =
                 lm_b_.boundaryField()[patchi][facei];
 
             tC_.boundaryFieldRef()[patchi][facei] =
                 t_b_.boundaryField()[patchi][facei];
+#else   
+            lmC_.boundaryField()[patchi][facei] =
+                lm_b_.boundaryField()[patchi][facei];
+
+            tC_.boundaryField()[patchi][facei] =
+                t_b_.boundaryField()[patchi][facei];
+#endif
         }
     // }
 }
 
     curllFreeAlgorithm();
 
-    lmFlux_ = tC_*magSf_;
-    FFlux_ = (lmC_/rho_)*Sf_ ;
+    lmFlux_ = tC_*mesh_.magSf();
+    FFlux_ = (lmC_/rho_)*mesh_.Sf() ;
 
     
 }

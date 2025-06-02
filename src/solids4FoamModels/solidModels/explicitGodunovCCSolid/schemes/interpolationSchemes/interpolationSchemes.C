@@ -91,13 +91,13 @@ volVectorField interpolationSchemes::surfaceToVol
     );
     GeometricField<scalar, fvPatchField, volMesh> w = tvf_s();
 
-    forAll(own_, faceID)
+    forAll(mesh_.owner(), faceID)
     {
-        const label& ownID = own_[faceID];
+        const label& ownID = mesh_.owner()[faceID];
         const label& neiID = mesh_.neighbour()[faceID];
 
-        const vector& dOwn = XF_[faceID] - X_[ownID];
-        const vector& dNei = XF_[faceID] - X_[neiID];
+        const vector& dOwn = mesh_.Cf()[faceID] - mesh_.C()[ownID];
+        const vector& dNei = mesh_.Cf()[faceID] - mesh_.C()[neiID];
 
         U[ownID] += sf[faceID]*(1.0/mag(dOwn));
         U[neiID] += sf[faceID]*(1.0/mag(dNei));
@@ -113,7 +113,7 @@ volVectorField interpolationSchemes::surfaceToVol
             const label& bCellID =
                 mesh_.boundaryMesh()[patchID].faceCells()[facei];
 
-            vector d = XF_.boundaryField()[patchID][facei] - X_[bCellID];
+            vector d = mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID];
 
             U[bCellID] += sf.boundaryField()[patchID][facei] * (1.0/mag(d));
             w[bCellID] += 1.0/mag(d);
@@ -126,21 +126,21 @@ volVectorField interpolationSchemes::surfaceToVol
             if (lmN_.boundaryField().types()[patchID] == "fixedValue")
             {
                 const label& faceID =
-                    mesh_.boundary()[patchID].start() + facei;
+                    mesh_.boundary()[patchID].patch().start() + facei;
 
                 forAll(mesh_.faces()[faceID], nodei)
                 {
                     const label& nodeID = mesh_.faces()[faceID][nodei];
-                    d = XN_[nodeID] - X_[bCellID];
+                    d = mesh_.points()[nodeID] - mesh_.C()[bCellID];
                     U[bCellID] += lmN_[nodeID] * (1.0/mag(d));
                     w[bCellID] += (1.0/mag(d));
 
                     for (int i=0; i<7; i++)
                     {
                         d =
-                            ((((i+1)*XN_[nodeID])
-                          + ((7-i)*XF_.boundaryField()[patchID][facei]) )/8.0)
-                          - X_[bCellID];
+                            ((((i+1)*mesh_.points()[nodeID])
+                          + ((7-i)*mesh_.Cf().boundaryField()[patchID][facei]) )/8.0)
+                          - mesh_.C()[bCellID];
 
                         U[bCellID] += lmN_[nodeID] * (1.0/mag(d));
                         w[bCellID] += 1.0/mag(d);
@@ -150,7 +150,11 @@ volVectorField interpolationSchemes::surfaceToVol
         }
     }
 
+#ifdef OPENFOAM_NOT_EXTEND
     U.primitiveFieldRef() /= w.internalField();
+#else
+    U.internalField() /= w.internalField();
+#endif
 
     tvf_v.clear();
     tvf_s.clear();
@@ -160,6 +164,7 @@ volVectorField interpolationSchemes::surfaceToVol
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#ifdef OPENFOAM_NOT_EXTEND
 
 template<class Type>
 void interpolationSchemes::pushUntransformedData
@@ -241,7 +246,7 @@ void interpolationSchemes::addSeparated
     }
 }
 
-
+#endif
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void interpolationSchemes::volToPoint
@@ -255,7 +260,7 @@ void interpolationSchemes::volToPoint
     const fvMesh& mesh = mesh_;
     const volVectorField& C = mesh.C();
 
-
+#ifdef OPENFOAM_NOT_EXTEND
     if( Pstream::parRun() )
     {
         pointScalarField sum
@@ -305,6 +310,7 @@ void interpolationSchemes::volToPoint
 
     else
     {
+#endif
         forAll (mesh.pointCells(), nodeID)
         {
             vector sum = vector::zero;
@@ -325,8 +331,9 @@ void interpolationSchemes::volToPoint
 
             Un[nodeID] = sum / weights;
         }
+#ifdef OPENFOAM_NOT_EXTEND        
     }
-
+#endif
 }
 
 
@@ -359,7 +366,7 @@ surfaceVectorField interpolationSchemes::pointToSurface
     );
     GeometricField<vector, fvsPatchField, surfaceMesh> Uf = tsf_v();
 
-    forAll(own_, faceID)
+    forAll(mesh_.owner(), faceID)
     {
         sum = vector::zero;
         weights = 0.0;
@@ -367,7 +374,7 @@ surfaceVectorField interpolationSchemes::pointToSurface
         forAll(mesh_.faces()[faceID], node)
         {
             const label& nodeID = mesh_.faces()[faceID][node];
-            // d = XN_[nodeID] - XF_[faceID];
+            // d = mesh_.points()[nodeID] - mesh_.Cf()[faceID];
             // sum += U[nodeID]*(1.0/mag(d));
             // weights += 1.0/mag(d);
             sum += U[nodeID];
@@ -381,21 +388,26 @@ surfaceVectorField interpolationSchemes::pointToSurface
     {
         forAll(mesh_.boundary()[patchID], facei)
         {
-            const label& faceID = mesh_.boundary()[patchID].start() + facei;
+            const label& faceID = mesh_.boundary()[patchID].patch().start() + facei;
             sum = vector::zero;
             weights = 0.0;
 
             forAll(mesh_.faces()[faceID], node)
             {
                 const label& nodeID = mesh_.faces()[faceID][node];
-                // d = XN_[nodeID] - XF_.boundaryField()[patchID][facei];
+                // d = mesh_.points()[nodeID] - mesh_.Cf().boundaryField()[patchID][facei];
                 // sum += U[nodeID]*(1.0/mag(d));
                 // weights += 1.0/mag(d);
                 sum += U[nodeID];
                 weights += 1.0;
             }
 
+#ifdef OPENFOAM_NOT_EXTEND
             Uf.boundaryFieldRef()[patchID][facei] = sum/weights;
+#else
+            Uf.boundaryField()[patchID][facei] = sum/weights;
+
+#endif
         }
     }
 

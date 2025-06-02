@@ -61,18 +61,24 @@ SourceFiles
 #ifndef movingDisplacementNodalLinearMomentumPointPatchVectorField_H
 #define movingDisplacementNodalLinearMomentumPointPatchVectorField_H
 
-#include "pointPatchFields.H"
 #include "fixedValueFvPatchFields.H"
 #include "fvsPatchFields.H"
 #include "fixedValuePointPatchFields.H"
 #include "addToRunTimeSelectionTable.H"
 #include "volFields.H"
+#ifdef OPENFOAM_NOT_EXTEND
+    #include "pointPatchFieldMapper.H"
+#else
+    #include "PointPatchFieldMapper.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-
+#ifdef OPENFOAM_NOT_EXTEND
+    typedef pointPatchFieldMapper PointPatchFieldMapper;
+#endif
 /*---------------------------------------------------------------------------*\
  Class movingDisplacementNodalLinearMomentumPointPatchVectorField Declaration
 \*---------------------------------------------------------------------------*/
@@ -124,18 +130,19 @@ public:
             const movingDisplacementNodalLinearMomentumPointPatchVectorField&,
             const pointPatch&,
             const DimensionedField<vector, pointMesh>&,
-            const pointPatchFieldMapper&
+            const PointPatchFieldMapper&
         );
 
+#ifndef OPENFOAM_ORG
         //- Construct as copy
         movingDisplacementNodalLinearMomentumPointPatchVectorField
         (
             const movingDisplacementNodalLinearMomentumPointPatchVectorField&
         );
 
-        virtual autoPtr<pointPatchVectorField> clone() const
+        virtual autoPtr<pointPatchField<vector> > clone() const
         {
-            return autoPtr<pointPatchVectorField>
+            return autoPtr<pointPatchField<vector> >
             (
                 new movingDisplacementNodalLinearMomentumPointPatchVectorField
                 (
@@ -143,6 +150,7 @@ public:
                 )
             );
         }
+#endif
 
         //- Construct as copy setting internal field reference
         movingDisplacementNodalLinearMomentumPointPatchVectorField
@@ -151,12 +159,12 @@ public:
             const DimensionedField<vector, pointMesh>&
         );
 
-        virtual autoPtr<pointPatchVectorField> clone
+        virtual autoPtr<pointPatchField<vector> > clone
         (
             const DimensionedField<vector, pointMesh>& iF
         ) const
         {
-            return autoPtr<pointPatchVectorField>
+            return autoPtr<pointPatchField<vector> >
             (
                 new movingDisplacementNodalLinearMomentumPointPatchVectorField
                 (
@@ -174,7 +182,7 @@ public:
             //- Reverse map the given fvPatchField onto this fvPatchField
             virtual void rmap
             (
-                const pointPatchVectorField&,
+                const pointPatchField<vector>&,
                 const labelList&
             );
 

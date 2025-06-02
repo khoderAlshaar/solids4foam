@@ -384,8 +384,8 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
 
 
     // Assign mesh points to the primitive field of xN_
-    xN_.primitiveFieldRef() = mesh().points();
-    XN_ = xN_;
+    // xN_.primitiveFieldRef() = mesh().points();
+    // XN_ = xN_;
 
 
     RKstages_[0] = 0;
@@ -555,7 +555,7 @@ void explicitGodunovCCSolid::setTraction
     else
     {
         FatalErrorIn
-        (
+        ( 
             "void Foam::solidModel::setTraction\n"
             "(\n"
             "    fvPatchVectorField& tractionPatch,\n"
@@ -585,12 +585,20 @@ void explicitGodunovCCSolid::setTraction
         globalPatches()[interfaceI].globalFaceToPatch(faceZoneTraction)
     );
 
+#ifdef OPENFOAM_NOT_EXTEND        
     volVectorField& lm_b = mesh().lookupObjectRef<volVectorField>("lm_b");
     volVectorField& t_b = mesh().lookupObjectRef<volVectorField>("t_b");
 
     setTraction(lm_b.boundaryFieldRef()[patchID], patchTraction);
     setTraction(t_b.boundaryFieldRef()[patchID], patchTraction);
+#else
+    volVectorField& lm_b = const_cast<volVectorField&>(mesh().lookupObject<volVectorField>("lm_b"));
 
+    volVectorField& t_b = const_cast<volVectorField&>(mesh().lookupObject<volVectorField>("t_b"));
+
+    setTraction(lm_b.boundaryField()[patchID], patchTraction);
+    setTraction(t_b.boundaryField()[patchID], patchTraction);
+#endif
 }
 
 

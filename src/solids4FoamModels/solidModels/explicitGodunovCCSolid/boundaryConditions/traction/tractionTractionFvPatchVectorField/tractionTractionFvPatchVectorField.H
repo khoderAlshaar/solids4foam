@@ -69,6 +69,7 @@ SourceFiles
 #ifndef tractionTractionFvPatchVectorField_H
 #define tractionTractionFvPatchVectorField_H
 
+#include "fvPatchFields.H"
 #include "fixedValueFvPatchFields.H"
 #include "addToRunTimeSelectionTable.H"
 #include "surfaceFields.H"

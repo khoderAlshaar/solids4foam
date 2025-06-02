@@ -118,7 +118,7 @@ mechanics::~mechanics()
 
 surfaceVectorField mechanics::spatialNormal(const volTensorField& F_)
 {
-  surfaceTensorField FcInv = (inv(fvc::interpolate(F_))).ref();
+  surfaceTensorField FcInv = (inv(fvc::interpolate(F_)));
     n_ = (FcInv.T() & N_)/(mag(FcInv.T() & N_));
 
     return n_;
@@ -135,11 +135,11 @@ void mechanics::correct
 )
 {
     // Spatial normals
-  surfaceTensorField FcInv = (inv(fvc::interpolate(F))).ref();
-  surfaceVectorField n_ = ((FcInv.T() & N_)/(mag(FcInv.T() & N_))).ref();
+  surfaceTensorField FcInv = (inv(fvc::interpolate(F)));
+  surfaceVectorField n_ = ((FcInv.T() & N_)/(mag(FcInv.T() & N_)));
 
     // Stretch
-  volTensorField C_ = (F.T() & F).ref();
+  volTensorField C_ = (F.T() & F);
     forAll(mesh_.cells(), cell)
     {
         op.eigenStructure(C_[cell]);

@@ -99,7 +99,7 @@ volTensorField operations::invT
     inv = Foam::inv(T);
     tsf.clear();
 
-    return inv.T().ref();
+    return inv.T();
 }
 
 
