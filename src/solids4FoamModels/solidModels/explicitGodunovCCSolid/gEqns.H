@@ -43,20 +43,20 @@ rhsLm_ = fvc::surfaceIntegrate(flux().lmFlux());
 if (runTime_.timeIndex() == 0)
 {
 
-    xN_ += pDeltaT_*(lmN_/rho_)- pDeltaT_*( (xN_.prevIter() - xN_.oldTime())/(deltaT_));
+    xN_ += pDeltaT_*(lmN_/rho_)- pDeltaT_*( (xN_ - xN_.oldTime())/(deltaT_));
 
-    lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (lm_.prevIter() - lm_.oldTime())/(deltaT_));
+    lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (lm_- lm_.oldTime())/(deltaT_));
     lm_ -= pDeltaT_*dampingCoeff()*lm_;
 
-    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux()) - pDeltaT_*( (F_.prevIter() - F_.oldTime())/(deltaT_)) ;
+    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux()) - pDeltaT_*( (F_ - F_.oldTime())/(deltaT_)) ;
 }
 
 else
 {
-    xN_ += pDeltaT_*(lmN_/rho_) - pDeltaT_*( (3*xN_.prevIter() - 4* xN_.oldTime() + xN_.oldTime().oldTime())/(2*deltaT_));
+    xN_ += pDeltaT_*(lmN_/rho_) - pDeltaT_*( (3*xN_ - 4* xN_.oldTime() + xN_.oldTime().oldTime())/(2*deltaT_));
 
-    lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (3*lm_.prevIter() - 4*lm_.oldTime() + lm_.oldTime().oldTime())/(2*deltaT_));
+    lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (3*lm_ - 4*lm_.oldTime() + lm_.oldTime().oldTime())/(2*deltaT_));
     lm_ -= pDeltaT_*dampingCoeff()*lm_;
 
-    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux())  - pDeltaT_*( (3*F_.prevIter() - 4*F_.oldTime() + F_.oldTime().oldTime())/(2*deltaT_));
+    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux())  - pDeltaT_*( (3*F_ - 4*F_.oldTime() + F_.oldTime().oldTime())/(2*deltaT_));
 }

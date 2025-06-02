@@ -1,7 +1,7 @@
-rhu = thermo_.rho();
+rho = thermo_.rho();
 
 volScalarField rAU(1.0/UEqn.A());
-surfaceScalarField rhorAUf("rhorAUf", fvc::interpolate(rhu*rAU));
+surfaceScalarField rhorAUf("rhorAUf", fvc::interpolate(rho*rAU));
 volVectorField HbyA(constrainHbyA(rAU*UEqn.H(),U,p));
 
     surfaceScalarField phid
@@ -10,7 +10,7 @@ volVectorField HbyA(constrainHbyA(rAU*UEqn.H(),U,p));
         fvc::interpolate(psi)
     *(
             fvc::flux(HbyA)
-        + rhorAUf*fvc::ddtCorr(rhu,U, phi)/fvc::interpolate(rhu)
+        + rhorAUf*fvc::ddtCorr(rho,U, phi)/fvc::interpolate(rho)
         )
     );
 
@@ -18,7 +18,7 @@ fvc::makeRelative(phid, psi,U);
 
 
 // Non-orthogonal pressure corrector loop
-while (pimple().correctNonOrthogonal())
+while (pimple.correctNonOrthogonal())
 {
     fvScalarMatrix pEqn
     (
@@ -26,30 +26,30 @@ while (pimple().correctNonOrthogonal())
       + fvm::div(phid,p)
       - fvm::laplacian(rhorAUf,p)
      ==
-        options()(psi,p, rhu.name())
+        options()(psi,p, rho.name())
     );
 
     pEqn.solve();
 
-    if (pimple().finalNonOrthogonalIter())
+    if (pimple.finalNonOrthogonalIter())
     {
         phi = pEqn.flux();
     }
 }
 
-  solveRhoEqn();
+#include "rhoEqn.H"
+#include "compressibleContinuityErrs.H"
 
-compressibleContinuityErrs();
-
-U = HbyA - rAU*fvc::grad(p());
+U = HbyA - rAU*fvc::grad(p);
 U.correctBoundaryConditions();
 options().correct(U);
 K = 0.5*magSqr(U);
 
     if (mesh.dynamic())
     {
-        rhoUf = fvc::interpolate(rhu*U);
+        rhoUf_() = fvc::interpolate(rho*U);
         surfaceVectorField n(mesh.Sf()/mesh.magSf());
-        rhoUf += n*(fvc::absolute(phi, rhu,U)/mesh.magSf() - (n & rhoUf));
+        rhoUf_() += n*(fvc::absolute(phi, rho,U)/mesh.magSf() - (n & rhoUf_()));
 
     }
+    

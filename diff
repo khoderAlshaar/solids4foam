@@ -1,0 +1,795 @@
+diff --git a/src/solids4FoamModels/Make/files.foamextend b/src/solids4FoamModels/Make/files.foamextend
+index 52aa03ab..85034ceb 100644
+--- a/src/solids4FoamModels/Make/files.foamextend
++++ b/src/solids4FoamModels/Make/files.foamextend
+@@ -29,6 +29,30 @@ solidModels/unsNonLinGeomTotalLagSolid/unsNonLinGeomTotalLagSolid.C
+ solidModels/weakThermalLinGeomSolid/weakThermalLinGeomSolid.C
+ solidModels/thermalSolid/thermalSolid.C
+ 
++
++explicitGodunovCCSolid = solidModels/explicitGodunovCCSolid
++$(explicitGodunovCCSolid)/mathematics/operations/operations.C
++$(explicitGodunovCCSolid)/mathematics/mechanics/mechanics.C
++$(explicitGodunovCCSolid)/boundaryConditions/moving/movingDisplacementLinearMomentumFvPatchVectorField/movingDisplacementLinearMomentumFvPatchVectorField.C
++$(explicitGodunovCCSolid)/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.C
++$(explicitGodunovCCSolid)/boundaryConditions/moving/movingDisplacementTractionFvPatchVectorField/movingDisplacementTractionFvPatchVectorField.C
++$(explicitGodunovCCSolid)/boundaryConditions/moving/movingTractionFvPatchVectorField/movingTractionFvPatchVectorField.C
++$(explicitGodunovCCSolid)/boundaryConditions/traction/tractionLinearMomentumFvPatchVectorField/tractionLinearMomentumFvPatchVectorField.C
++$(explicitGodunovCCSolid)/boundaryConditions/traction/tractionTractionFvPatchVectorField/tractionTractionFvPatchVectorField.C
++$(explicitGodunovCCSolid)/boundaryConditions/symmetric/symmetricLinearMomentumFvPatchVectorField/symmetricLinearMomentumFvPatchVectorField.C
++$(explicitGodunovCCSolid)/boundaryConditions/symmetric/symmetricTractionFvPatchVectorField/symmetricTractionFvPatchVectorField.C
++$(explicitGodunovCCSolid)/models/solidMaterialModel/solidMaterialModel.C
++$(explicitGodunovCCSolid)/schemes/gradientSchemes/gradientSchemes.C
++$(explicitGodunovCCSolid)/schemes/interpolationSchemes/interpolationSchemes.C
++$(explicitGodunovCCSolid)/schemes/angularMomentum/angularMomentum.C
++$(explicitGodunovCCSolid)/numericalFlux/contactFlux/contactFlux.C
++$(explicitGodunovCCSolid)/numericalFlux/roeFlux/roeFlux.C
++$(explicitGodunovCCSolid)/numericalFlux/numericalFlux.C
++
++
++$(explicitGodunovCCSolid)/explicitGodunovCCSolid.C
++
++
+ fluidModels/fluidModel/fluidModel.C
+ fluidModels/interFluid/interFluid.C
+ fluidModels/oneWayFsiFluid/oneWayFsiFluid.C
+@@ -252,4 +276,4 @@ numerics/meshDualiser/meshDualiser.C
+ numerics/cellPointLeastSquaresVectors/cellPointLeastSquaresVectors.C
+ numerics/pointPointLeastSquaresVectors/pointPointLeastSquaresVectors.C
+ 
+-LIB = $(FOAM_MODULE_LIBBIN)/libsolids4FoamModels
++LIB = $(FOAM_MODULE_LIBBIN)/libsolids4FoamModels
+\ No newline at end of file
+diff --git a/src/solids4FoamModels/Make/files.openfoam b/src/solids4FoamModels/Make/files.openfoam
+index c1492c34..96f55986 100644
+--- a/src/solids4FoamModels/Make/files.openfoam
++++ b/src/solids4FoamModels/Make/files.openfoam
+@@ -257,4 +257,4 @@ numerics/sparseMatrix/sparseMatrix.C
+ numerics/sparseMatrix/SparseMatrixTemplates.C
+ numerics/sparseMatrix/sparseMatrixTools.C
+ 
+-LIB = $(FOAM_MODULE_LIBBIN)/libsolids4FoamModels
++LIB = $(FOAM_MODULE_LIBBIN)/libsolids4FoamModels
+\ No newline at end of file
+diff --git a/src/solids4FoamModels/Make/options b/src/solids4FoamModels/Make/options
+index fad9262a..c3e820a8 100644
+--- a/src/solids4FoamModels/Make/options
++++ b/src/solids4FoamModels/Make/options
+@@ -113,4 +113,4 @@ LIB_LIBS = \
+     -lmeshTools \
+     -ltopoChangerFvMesh \
+     -L$(FOAM_MODULE_LIBBIN) \
+-    -lblockCoupledSolids4FoamTools -lRBFMeshMotionSolver
++    -lblockCoupledSolids4FoamTools -lRBFMeshMotionSolver
+\ No newline at end of file
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.C
+index 0337e12b..9e7a0151 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.C
+@@ -18,6 +18,14 @@ License
+ \*---------------------------------------------------------------------------*/
+ 
+ #include "movingDisplacementNodalLinearMomentumPointPatchVectorField.H"
++#include "addToRunTimeSelectionTable.H"
++#include "transformField.H"
++#include "pointPatchFields.H"
++#include "pointBoundaryMesh.H"
++#include "pointMesh.H"
++#ifdef OPENFOAM_NOT_EXTEND
++    #include "Time.H"
++#endif
+ 
+ // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+ 
+@@ -53,51 +61,57 @@ movingDisplacementNodalLinearMomentumPointPatchVectorField
+     uMax_(dict.lookup("displacement")),
+     tEnd_(readScalar(dict.lookup("endTime")))
+ {
+-    pointPatchVectorField::operator=(vectorField("value", dict, p.size()));
++    fixedValuePointPatchVectorField::operator=(vectorField("value", dict, p.size()));
+     updateCoeffs();
+ }
+ 
+-
+ movingDisplacementNodalLinearMomentumPointPatchVectorField::
+ movingDisplacementNodalLinearMomentumPointPatchVectorField
+ (
+     const movingDisplacementNodalLinearMomentumPointPatchVectorField& ptf,
+     const pointPatch& p,
+     const DimensionedField<vector, pointMesh>& iF,
+-    const pointPatchFieldMapper& mapper
++    const PointPatchFieldMapper& mapper
+ )
+ :
+-    fixedValuePointPatchVectorField(ptf, p, iF, mapper),
++    // fixedValuePointPatchVectorField(ptf, p, iF, mapper),
++    fixedValuePointPatchVectorField(p, iF),
++    #ifdef OPENFOAM_NOT_EXTEND
++    rho_(mapper(ptf.rho_)),
++    uMax_(mapper(ptf.uMax_)),
++    tEnd_(mapper(ptf.tEnd_))
++#else
+     rho_(ptf.rho_),
+     uMax_(ptf.uMax_),
+     tEnd_(ptf.tEnd_)
++#endif
+ {}
+ 
+-
++#ifndef OPENFOAM_ORG
+ movingDisplacementNodalLinearMomentumPointPatchVectorField::
+ movingDisplacementNodalLinearMomentumPointPatchVectorField
+ (
+-    const movingDisplacementNodalLinearMomentumPointPatchVectorField& rifvpvf
++    const movingDisplacementNodalLinearMomentumPointPatchVectorField& ptf
+ )
+ :
+-    fixedValuePointPatchVectorField(rifvpvf),
+-    rho_(rifvpvf.rho_),
+-    uMax_(rifvpvf.uMax_),
+-    tEnd_(rifvpvf.tEnd_)
++    fixedValuePointPatchVectorField(ptf),
++    rho_(ptf.rho_),
++    uMax_(ptf.uMax_),
++    tEnd_(ptf.tEnd_)
+ {}
+-
++#endif
+ 
+ movingDisplacementNodalLinearMomentumPointPatchVectorField::
+ movingDisplacementNodalLinearMomentumPointPatchVectorField
+ (
+-    const movingDisplacementNodalLinearMomentumPointPatchVectorField& rifvpvf,
++    const movingDisplacementNodalLinearMomentumPointPatchVectorField& ptf,
+     const DimensionedField<vector, pointMesh>& iF
+ )
+ :
+-    fixedValuePointPatchVectorField(rifvpvf, iF),
+-    rho_(rifvpvf.rho_),
+-    uMax_(rifvpvf.uMax_),
+-    tEnd_(rifvpvf.tEnd_)
++    fixedValuePointPatchVectorField(ptf, iF),
++    rho_(ptf.rho_),
++    uMax_(ptf.uMax_),
++    tEnd_(ptf.tEnd_)
+ {}
+ 
+ 
+@@ -105,7 +119,7 @@ movingDisplacementNodalLinearMomentumPointPatchVectorField
+ 
+ void movingDisplacementNodalLinearMomentumPointPatchVectorField::rmap
+ (
+-    const pointPatchVectorField& ptf,
++    const pointPatchField<vector>& ptf,
+     const labelList& addr
+ )
+ {
+@@ -115,6 +129,7 @@ void movingDisplacementNodalLinearMomentumPointPatchVectorField::rmap
+ 
+ void movingDisplacementNodalLinearMomentumPointPatchVectorField::updateCoeffs()
+ {
++
+     if (updated())
+     {
+         return;
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.H b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.H
+index e37149ec..ae364dff 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.H
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/moving/movingDisplacementNodalLinearMomentumPointPatchVectorField/movingDisplacementNodalLinearMomentumPointPatchVectorField.H
+@@ -61,17 +61,26 @@ SourceFiles
+ #ifndef movingDisplacementNodalLinearMomentumPointPatchVectorField_H
+ #define movingDisplacementNodalLinearMomentumPointPatchVectorField_H
+ 
+-#include "pointPatchFields.H"
++#include "calculatedPointPatchFields.H"
+ #include "fixedValueFvPatchFields.H"
+ #include "fvsPatchFields.H"
+ #include "fixedValuePointPatchFields.H"
+ #include "addToRunTimeSelectionTable.H"
+ #include "volFields.H"
++#ifdef OPENFOAM_NOT_EXTEND
++    #include "pointPatchFieldMapper.H"
++#else
++    #include "PointPatchFieldMapper.H"
++#endif
++
+ 
+ // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+ 
+ namespace Foam
+ {
++#ifdef OPENFOAM_NOT_EXTEND
++    typedef pointPatchFieldMapper PointPatchFieldMapper;
++#endif
+ 
+ /*---------------------------------------------------------------------------*\
+  Class movingDisplacementNodalLinearMomentumPointPatchVectorField Declaration
+@@ -124,18 +133,19 @@ public:
+             const movingDisplacementNodalLinearMomentumPointPatchVectorField&,
+             const pointPatch&,
+             const DimensionedField<vector, pointMesh>&,
+-            const pointPatchFieldMapper&
++            const PointPatchFieldMapper&
+         );
+ 
++#ifndef OPENFOAM_ORG
+         //- Construct as copy
+         movingDisplacementNodalLinearMomentumPointPatchVectorField
+         (
+             const movingDisplacementNodalLinearMomentumPointPatchVectorField&
+         );
+ 
+-        virtual autoPtr<pointPatchVectorField> clone() const
++        virtual autoPtr<pointPatchField<vector> > clone() const
+         {
+-            return autoPtr<pointPatchVectorField>
++            return autoPtr<pointPatchField<vector> >
+             (
+                 new movingDisplacementNodalLinearMomentumPointPatchVectorField
+                 (
+@@ -143,6 +153,8 @@ public:
+                 )
+             );
+         }
++#endif
++
+ 
+         //- Construct as copy setting internal field reference
+         movingDisplacementNodalLinearMomentumPointPatchVectorField
+@@ -151,12 +163,12 @@ public:
+             const DimensionedField<vector, pointMesh>&
+         );
+ 
+-        virtual autoPtr<pointPatchVectorField> clone
++        virtual autoPtr<pointPatchField<vector> > clone
+         (
+             const DimensionedField<vector, pointMesh>& iF
+         ) const
+         {
+-            return autoPtr<pointPatchVectorField>
++            return autoPtr<pointPatchField<vector> >
+             (
+                 new movingDisplacementNodalLinearMomentumPointPatchVectorField
+                 (
+@@ -174,10 +186,11 @@ public:
+             //- Reverse map the given fvPatchField onto this fvPatchField
+             virtual void rmap
+             (
+-                const pointPatchVectorField&,
++                const pointPatchField<vector>&,
+                 const labelList&
+             );
+ 
++
+         // Update the coefficients associated with the patch field
+         virtual void updateCoeffs();
+ 
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionLinearMomentumFvPatchVectorField/tractionLinearMomentumFvPatchVectorField.H b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionLinearMomentumFvPatchVectorField/tractionLinearMomentumFvPatchVectorField.H
+index cbaea96a..635e564e 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionLinearMomentumFvPatchVectorField/tractionLinearMomentumFvPatchVectorField.H
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionLinearMomentumFvPatchVectorField/tractionLinearMomentumFvPatchVectorField.H
+@@ -69,6 +69,7 @@ SourceFiles
+ #ifndef tractionLinearMomentumFvPatchVectorField_H
+ #define tractionLinearMomentumFvPatchVectorField_H
+ 
++#include "fvPatchFields.H"
+ #include "fixedValueFvPatchFields.H"
+ #include "fixedValueFvsPatchFields.H"
+ #include "addToRunTimeSelectionTable.H"
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionTractionFvPatchVectorField/tractionTractionFvPatchVectorField.H b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionTractionFvPatchVectorField/tractionTractionFvPatchVectorField.H
+index 4852ba2e..9bf2e232 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionTractionFvPatchVectorField/tractionTractionFvPatchVectorField.H
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/boundaryConditions/traction/tractionTractionFvPatchVectorField/tractionTractionFvPatchVectorField.H
+@@ -69,6 +69,7 @@ SourceFiles
+ #ifndef tractionTractionFvPatchVectorField_H
+ #define tractionTractionFvPatchVectorField_H
+ 
++#include "fvPatchFields.H"
+ #include "fixedValueFvPatchFields.H"
+ #include "addToRunTimeSelectionTable.H"
+ #include "surfaceFields.H"
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/explicitGodunovCCSolid.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/explicitGodunovCCSolid.C
+index 1a482745..466d407e 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/explicitGodunovCCSolid.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/explicitGodunovCCSolid.C
+@@ -22,7 +22,7 @@ License
+ #include "explicitSolidTractionTractionFvPatchVectorField.H"
+ #include "explicitSolidTractionLinearMomentumFvPatchVectorField.H"
+ 
+-
++ 
+ // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+ 
+ namespace Foam
+@@ -384,7 +384,7 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
+ 
+ 
+     // Assign mesh points to the primitive field of xN_
+-    xN_.primitiveFieldRef() = mesh().points();
++    xN_.internalField() = mesh().points();
+     XN_ = xN_;
+ 
+ 
+@@ -552,6 +552,7 @@ void explicitGodunovCCSolid::setTraction
+ 
+         patchLinearMomentum.traction() = traction;
+     }
++
+     else
+     {
+         FatalErrorIn
+@@ -585,11 +586,18 @@ void explicitGodunovCCSolid::setTraction
+         globalPatches()[interfaceI].globalFaceToPatch(faceZoneTraction)
+     );
+ 
++#ifdef OPENFOAM_NOT_EXTEND
+     volVectorField& lm_b = mesh().lookupObjectRef<volVectorField>("lm_b");
+     volVectorField& t_b = mesh().lookupObjectRef<volVectorField>("t_b");
+-
+     setTraction(lm_b.boundaryFieldRef()[patchID], patchTraction);
+     setTraction(t_b.boundaryFieldRef()[patchID], patchTraction);
++#else
++    volVectorField& lm_b = const_cast<volVectorField&>(mesh().lookupObject<volVectorField>("lm_b"));
++    volVectorField& t_b  = const_cast<volVectorField&>(mesh().lookupObject<volVectorField>("t_b"));
++    setTraction(lm_b.boundaryField()[patchID], patchTraction);
++    setTraction(t_b.boundaryField()[patchID], patchTraction);
++#endif
++
+ 
+ }
+ 
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/mechanics/mechanics.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/mechanics/mechanics.C
+index 56c2942c..79ff9e3d 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/mechanics/mechanics.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/mechanics/mechanics.C
+@@ -118,7 +118,7 @@ mechanics::~mechanics()
+ 
+ surfaceVectorField mechanics::spatialNormal(const volTensorField& F_)
+ {
+-  surfaceTensorField FcInv = (inv(fvc::interpolate(F_))).ref();
++  surfaceTensorField FcInv = (inv(fvc::interpolate(F_)));
+     n_ = (FcInv.T() & N_)/(mag(FcInv.T() & N_));
+ 
+     return n_;
+@@ -135,11 +135,11 @@ void mechanics::correct
+ )
+ {
+     // Spatial normals
+-  surfaceTensorField FcInv = (inv(fvc::interpolate(F))).ref();
+-  surfaceVectorField n_ = ((FcInv.T() & N_)/(mag(FcInv.T() & N_))).ref();
++  surfaceTensorField FcInv = (inv(fvc::interpolate(F)));
++  surfaceVectorField n_ = ((FcInv.T() & N_)/(mag(FcInv.T() & N_)));
+ 
+     // Stretch
+-  volTensorField C_ = (F.T() & F).ref();
++  volTensorField C_ = (F.T() & F);
+     forAll(mesh_.cells(), cell)
+     {
+         op.eigenStructure(C_[cell]);
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/operations/operations.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/operations/operations.C
+index 76160b11..481a4b4a 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/operations/operations.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/mathematics/operations/operations.C
+@@ -99,7 +99,7 @@ volTensorField operations::invT
+     inv = Foam::inv(T);
+     tsf.clear();
+ 
+-    return inv.T().ref();
++    return inv.T();
+ }
+ 
+ 
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/contactFlux.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/contactFlux.C
+index bebe822c..4d1cba3a 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/contactFlux.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/contactFlux.C
+@@ -66,7 +66,7 @@ contactFlux::contactFlux
+     magSf_(mesh_.magSf()),
+     Sf_(mesh_.Sf()),
+     // Creating mesh normal fields
+-    N_((Sf_ / mesh_.magSf()).ref()),
++    N_((Sf_ / mesh_.magSf())),
+ 
+     rho_(model_.density()),
+ 
+@@ -103,7 +103,7 @@ contactFlux::contactFlux
+         IOobject("t_M", mesh_),
+         P_M_ & N_
+     ),
+-    t_P_((P_P_ & N_).ref()),
++    t_P_((P_P_ & N_)),
+ 
+     S_lm_(mech_.Smatrix_lm()),
+     S_t_(mech_.Smatrix_t()),
+@@ -244,12 +244,14 @@ void contactFlux::computeFlux()
+     reconstruction();
+ 
+ // Acoustic Riemann solver
++#ifndef FOAMEXTEND
+ S_lm_.oriented() = false;
+ S_t_.oriented() = false;
+ t_M_.oriented() = false;
+ t_P_.oriented() = false;
+ lm_P_.oriented() = false;
+ lm_M_.oriented() = false;
++#endif
+ 
+ tC_ = 0.5*(t_M_+t_P_) + (0.5*S_lm_ & (lm_P_ - lm_M_));
+ lmC_ = 0.5*(lm_M_+lm_P_) + (0.5*S_t_ & (t_P_ - t_M_));
+@@ -363,11 +365,19 @@ forAll(mesh_.boundary(), patchi)
+     // {
+         forAll(mesh_.boundary()[patchi], facei)
+         {
++#ifdef OPENFOAM_NOT_EXTEND
+             lmC_.boundaryFieldRef()[patchi][facei] =
+                 lm_b_.boundaryField()[patchi][facei];
+ 
+             tC_.boundaryFieldRef()[patchi][facei] =
+                 t_b_.boundaryField()[patchi][facei];
++#else
++            lmC_.boundaryField()[patchi][facei] =
++                lm_b_.boundaryField()[patchi][facei];
++
++            tC_.boundaryField()[patchi][facei] =
++                t_b_.boundaryField()[patchi][facei];
++#endif
+         }
+     // }
+ }
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/strongBCs.H b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/strongBCs.H
+index 464a671a..00da3a00 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/strongBCs.H
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/contactFlux/strongBCs.H
+@@ -33,7 +33,7 @@ if (symmetricPatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricPatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricPatchID_].start() + facei;
++            mesh_.boundary()[symmetricPatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+@@ -55,7 +55,7 @@ if (symmetricXpatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricXpatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricXpatchID_].start() + facei;
++            mesh_.boundary()[symmetricXpatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+@@ -77,7 +77,7 @@ if (symmetricYpatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricYpatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricYpatchID_].start() + facei;
++            mesh_.boundary()[symmetricYpatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+@@ -99,7 +99,7 @@ if (symmetricZpatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricZpatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricZpatchID_].start() + facei;
++            mesh_.boundary()[symmetricZpatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/roeFlux.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/roeFlux.C
+index 02957fd3..d1caac36 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/roeFlux.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/roeFlux.C
+@@ -66,7 +66,7 @@ roeFlux::roeFlux
+     magSf_(mesh_.magSf()),
+     Sf_(mesh_.Sf()),
+     // Creating mesh normal fields
+-    N_((Sf_ / mesh_.magSf()).ref()),
++    N_((Sf_ / mesh_.magSf())),
+ 
+     rho_(model_.density()),
+ 
+@@ -103,7 +103,7 @@ roeFlux::roeFlux
+         IOobject("t_M", mesh_),
+         P_M_ & N_
+     ),
+-    t_P_((P_P_ & N_).ref()),
++    t_P_((P_P_ & N_)),
+ 
+     S_lm_(mech_.Smatrix_lm()),
+     S_t_(mech_.Smatrix_t()),
+@@ -464,10 +464,10 @@ forAll(mesh_.boundary(), patchi)
+ 
+         forAll(mesh_.boundary()[patchi], facei)
+         {
+-            roeFlux_lm_.boundaryFieldRef()[patchi][facei] =  
++            roeFlux_lm_.boundaryField()[patchi][facei] =  
+                 t_b_.boundaryField()[patchi][facei];
+ 
+-            roeFlux_F_.boundaryFieldRef()[patchi][facei] =  (1/rho_.value())*
++            roeFlux_F_.boundaryField()[patchi][facei] =  (1/rho_.value())*
+                 ( lm_b_.boundaryField()[patchi][facei] * N_.boundaryField()[patchi][facei]);
+     
+         }
+@@ -630,6 +630,7 @@ void roeFlux::computeFlux()
+     reconstruction();
+ 
+ // Acoustic Riemann solver
++#ifndef FOAMEXTEND
+ S_lm_.oriented() = false;
+ S_t_.oriented() = false;
+ t_M_.oriented() = false;
+@@ -642,6 +643,7 @@ F_M_.oriented() = false;
+  
+ P_P_.oriented() = false;
+ P_M_.oriented() = false;
++#endif
+ 
+  lm_M_hat_ = R_ & lm_M_;
+  lm_P_hat_ = R_ & lm_P_;
+@@ -723,10 +725,10 @@ forAll(mesh_.boundary(), patchi)
+ 
+         forAll(mesh_.boundary()[patchi], facei)
+         {
+-            roeFlux_lm_.boundaryFieldRef()[patchi][facei] =  
++            roeFlux_lm_.boundaryField()[patchi][facei] =  
+                 t_b_.boundaryField()[patchi][facei];
+ 
+-            roeFlux_F_.boundaryFieldRef()[patchi][facei] =  (1/rho_.value())*
++            roeFlux_F_.boundaryField()[patchi][facei] =  (1/rho_.value())*
+                 ( lm_b_.boundaryField()[patchi][facei] * N_.boundaryField()[patchi][facei]);
+     
+         }
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/strongBCs.H b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/strongBCs.H
+index 464a671a..00da3a00 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/strongBCs.H
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/numericalFlux/roeFlux/strongBCs.H
+@@ -33,7 +33,7 @@ if (symmetricPatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricPatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricPatchID_].start() + facei;
++            mesh_.boundary()[symmetricPatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+@@ -55,7 +55,7 @@ if (symmetricXpatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricXpatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricXpatchID_].start() + facei;
++            mesh_.boundary()[symmetricXpatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+@@ -77,7 +77,7 @@ if (symmetricYpatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricYpatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricYpatchID_].start() + facei;
++            mesh_.boundary()[symmetricYpatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+@@ -99,7 +99,7 @@ if (symmetricZpatchID_ != -1)
+     forAll(mesh_.boundary()[symmetricZpatchID_], facei)
+     {
+         const label& faceID =
+-            mesh_.boundary()[symmetricZpatchID_].start() + facei;
++            mesh_.boundary()[symmetricZpatchID_].patch().start() + facei;
+ 
+         forAll(mesh_.faces()[faceID], node)
+         {
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/gradientSchemes/gradientSchemes.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/gradientSchemes/gradientSchemes.C
+index ed07a4d4..b26ecd3c 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/gradientSchemes/gradientSchemes.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/gradientSchemes/gradientSchemes.C
+@@ -115,7 +115,7 @@ void gradientSchemes::distanceMatrix
+         U.correctBoundaryConditions();
+     }
+ 
+-    U.primitiveFieldRef() = inv(U.internalField());
++    U.internalField() = inv(U.internalField());
+ }
+ 
+ 
+@@ -170,7 +170,7 @@ void gradientSchemes::distanceMatrixLocal
+             // if (lmN_.boundaryField().types()[patchID] == "fixedValue")
+             // {
+             //     const label& faceID =
+-            //         mesh_.boundary()[patchID].start() + facei;
++            //         mesh_.boundary()[patchID].patch().start() + facei;
+ 
+             //     forAll(mesh_.faces()[faceID], nodei)
+             //     {
+@@ -192,7 +192,7 @@ void gradientSchemes::distanceMatrixLocal
+         }
+     }
+ 
+-    Ainv.primitiveFieldRef() = inv(dCd.internalField());
++    Ainv.internalField() = inv(dCd.internalField());
+ }
+ 
+ 
+@@ -489,7 +489,7 @@ volTensorField gradientSchemes::localGradient
+             if (lmN_.boundaryField().types()[patchID] == "fixedValue")
+             {
+                 const label& faceID =
+-                    mesh_.boundary()[patchID].start() + facei;
++                    mesh_.boundary()[patchID].patch().start() + facei;
+ 
+                 forAll(mesh_.faces()[faceID], nodei)
+                 {
+@@ -576,11 +576,11 @@ void gradientSchemes::reconstruct
+             const label& bCellID =
+                 mesh_.boundaryMesh()[patchID].faceCells()[facei];
+ 
+-            U.boundaryFieldRef()[patchID][facei] =
++            U.boundaryField()[patchID][facei] =
+                 U[bCellID] + ( Ugrad[bCellID]
+               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+ 
+-            Um.boundaryFieldRef()[patchID][facei] =
++            Um.boundaryField()[patchID][facei] =
+                 U[bCellID] + ( Ugrad[bCellID]
+               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+         }
+@@ -620,7 +620,7 @@ void gradientSchemes::reconstruct
+             const label& bCellID =
+                 mesh_.boundaryMesh()[patchID].faceCells()[facei];
+ 
+-            Um.boundaryFieldRef()[patchID][facei] =
++            Um.boundaryField()[patchID][facei] =
+                 U[bCellID] + (Ugrad[bCellID]
+               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+         }
+@@ -724,10 +724,10 @@ void gradientSchemes::reconstruct
+                 Uz[bCellID] + (UzGrad[bCellID]
+               & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+ 
+-            U.boundaryFieldRef()[patchID][facei] =
++            U.boundaryField()[patchID][facei] =
+                 tensor(reconsX, reconsY, reconsZ);
+ 
+-            Um.boundaryFieldRef()[patchID][facei] =
++            Um.boundaryField()[patchID][facei] =
+                 tensor(reconsX, reconsY, reconsZ);
+         }
+     }
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.C b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.C
+index c5b92ad7..1e9e57dd 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.C
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.C
+@@ -126,7 +126,7 @@ volVectorField interpolationSchemes::surfaceToVol
+             if (lmN_.boundaryField().types()[patchID] == "fixedValue")
+             {
+                 const label& faceID =
+-                    mesh_.boundary()[patchID].start() + facei;
++                    mesh_.boundary()[patchID].patch().start() + facei;
+ 
+                 forAll(mesh_.faces()[faceID], nodei)
+                 {
+@@ -150,7 +150,7 @@ volVectorField interpolationSchemes::surfaceToVol
+         }
+     }
+ 
+-    U.primitiveFieldRef() /= w.internalField();
++    U.internalField() /= w.internalField();
+ 
+     tvf_v.clear();
+     tvf_s.clear();
+@@ -160,7 +160,7 @@ volVectorField interpolationSchemes::surfaceToVol
+ 
+ 
+ // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+-
++#ifndef FOAMEXTEND
+ template<class Type>
+ void interpolationSchemes::pushUntransformedData
+ (
+@@ -210,7 +210,7 @@ void interpolationSchemes::addSeparated
+         Internal& pfi = pf.ref();
+ 
+     typename GeometricField<Type, pointPatchField, pointMesh>::
+-        Boundary& pfbf = pf.boundaryFieldRef();
++        Boundary& pfbf = pf.boundaryField();
+ 
+     forAll(pfbf, patchi)
+     {
+@@ -240,7 +240,7 @@ void interpolationSchemes::addSeparated
+         }
+     }
+ }
+-
++#endif
+ 
+ // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+ 
+@@ -255,7 +255,7 @@ void interpolationSchemes::volToPoint
+     const fvMesh& mesh = mesh_;
+     const volVectorField& C = mesh.C();
+ 
+-
++#ifndef FOAMEXTEND
+     if( Pstream::parRun() )
+     {
+         pointScalarField sum
+@@ -305,6 +305,7 @@ void interpolationSchemes::volToPoint
+ 
+     else
+     {
++#endif
+         forAll (mesh.pointCells(), nodeID)
+         {
+             vector sum = vector::zero;
+@@ -325,8 +326,9 @@ void interpolationSchemes::volToPoint
+ 
+             Un[nodeID] = sum / weights;
+         }
++#ifndef FOAMEXTEND        
+     }
+-
++#endif
+ }
+ 
+ 
+@@ -381,7 +383,7 @@ surfaceVectorField interpolationSchemes::pointToSurface
+     {
+         forAll(mesh_.boundary()[patchID], facei)
+         {
+-            const label& faceID = mesh_.boundary()[patchID].start() + facei;
++            const label& faceID = mesh_.boundary()[patchID].patch().start() + facei;
+             sum = vector::zero;
+             weights = 0.0;
+ 
+@@ -395,7 +397,7 @@ surfaceVectorField interpolationSchemes::pointToSurface
+                 // weights += 1.0;
+             }
+ 
+-            Uf.boundaryFieldRef()[patchID][facei] = sum/weights;
++            Uf.boundaryField()[patchID][facei] = sum/weights;
+         }
+     }
+ 
+diff --git a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.H b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.H
+index 4fcc024f..2e1f0161 100644
+--- a/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.H
++++ b/src/solids4FoamModels/solidModels/explicitGodunovCCSolid/schemes/interpolationSchemes/interpolationSchemes.H
+@@ -42,7 +42,9 @@ SourceFiles
+ #include "volFields.H"
+ #include "surfaceFields.H"
+ #include "pointFields.H"
+-#include "pointConstraints.H"
++#ifndef FOAMEXTEND
++    #include "pointConstraints.H"
++#endif
+ #include "volPointInterpolation.H"
+ #include "fvPatchFields.H"
+ 
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/fluid/dynamicMeshDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/fluid/dynamicMeshDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/fluid/polyMesh/blockMeshDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/fluid/polyMesh/blockMeshDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/solid/dynamicMeshDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/solid/dynamicMeshDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/solid/polyMesh/blockMeshDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/constant/solid/polyMesh/blockMeshDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/controlDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/controlDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/decomposeParDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/decomposeParDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/fluid/decomposeParDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/fluid/decomposeParDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/solid/controlDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/solid/controlDict
+old mode 100755
+new mode 100644
+diff --git a/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/solid/decomposeParDict b/tutorials/fluidSolidInteraction/explicitGodunovCC/perpendicularFlap/system/solid/decomposeParDict
+old mode 100755
+new mode 100644

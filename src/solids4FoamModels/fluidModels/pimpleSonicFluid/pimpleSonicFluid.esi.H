@@ -16,30 +16,27 @@ License
     along with solids4foam.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    sonicFluid
+    pimpleSonicFluid
 
 Description
-    Transient solver for trans-sonic/supersonic, laminar flow of a
-    compressible liquid. Assumes a linear equation of state between
-    density and pressure related by the bulk modulus.
+    pimpleFoam fluid model from OpenFOAM-v2012.
 
 Author
-    Iago Lessa de Oliveira, FEIS/UNESP/UCD.
-    Philip Cardiff, UCD. All rights reserved.
+    Ported by Philip Cardiff, UCD.
+    Extension to Robin coupling and thermal analysed by Zeljko Tukovic, Zagreb.
 
 SourceFiles
-    sonicFluid.esi.C
+    pimpleSonicFluid.esi.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef sonicFluid_H
-#define sonicFluid_H
+#ifndef pimpleSonicFluid_H
+#define pimpleSonicFluid_H
 
 #include "fluidModel.H"
-#include "pimpleControl.H"
-// #include "uniformDimensionedFields.H"
-// #include "pressureControl.H"
-// #include "fvcSmooth.H"
+#include "singlePhaseTransportModel.H"
+#include "turbulentTransportModel.H"
+#include "CorrectPhi.H"
 
 #include "psiThermo.H"
 #include "turbulentFluidThermoModel.H"
@@ -58,18 +55,20 @@ namespace fluidModels
 {
 
 /*---------------------------------------------------------------------------*\
-                        Class sonicFluid Declaration
+                        Class pimpleSonicFluid Declaration
 \*---------------------------------------------------------------------------*/
 
-class sonicFluid
+class pimpleSonicFluid
 :
     public fluidModel
 {
     // Private data
+
         autoPtr<psiThermo> pThermo_;
 
         psiThermo& thermo_;
         
+        //- Turbulence model
         autoPtr<compressible::turbulenceModel> turbulence_;
 
         volScalarField K_;
@@ -78,22 +77,20 @@ class sonicFluid
 
         const volScalarField& psi_;
 
-        // Transport properties dictionary
-        // IOdictionary transportProperties_;
-
         //- Dynamic viscosity
         volScalarField mu_;
 
         //- Fluid density
         volScalarField rho_;
 
-        //- Creates and initialises the momentum field rhoUf
+
+        //- Pointer to the velocity surface field
         autoPtr<surfaceVectorField> rhoUf_;
 
         //- rAU field
         volScalarField rAU_;
 
-                //- Correct phi flag
+        //- Correct phi flag
         const bool correctPhi_;
 
         //- Check Courant number flag
@@ -102,48 +99,47 @@ class sonicFluid
         // Move mesh in the outer corrector loop flag
         const bool moveMeshOuterCorrectors_;
 
-        //- Cumulative continuity error
+        //- Cumulative continuity errors
         scalar cumulativeContErr_;
 
+                //- Adjustable time-step switch
+        const Switch adjustTimeStep_;
+
+                //- For adjustable time-step, this is the maximum Courant number
+        const scalar maxCo_;
+
+        //- For adjustable time-step, this is the maximum time-stpe
+        const scalar maxDeltaT_;
+        
+
+
+
     // Private Member Functions
-
-        //- Correct phi function
-        void correctPhi();
-
         //- Calculates and prints the continuity errors
         void compressibleContinuityErrs();
 
-        //- Solve density equation
-        void solveRhoEqn();
-
-        //- Phi correction for mesh motion
+          //- Phi correction for mesh motion
         void CorrectFlux();
 
         //- Print compressible Courant number
         void compressibleCourantNo();
 
-        //- Solve pressure equation
-        void solvePEqn
-        (
-            const fvVectorMatrix& UEqn
-        );
-
         //- Disallow default bitwise copy construct
-        sonicFluid(const sonicFluid&);
+        pimpleSonicFluid(const pimpleSonicFluid&);
 
         //- Disallow default bitwise assignment
-        void operator=(const sonicFluid&);
+        void operator=(const pimpleSonicFluid&);
 
 
 public:
 
     //- Runtime type information
-    TypeName("sonicFluid");
+    TypeName("pimpleSonicFluid");
 
     // Constructors
 
         //- Construct from components
-        sonicFluid
+        pimpleSonicFluid
         (
             Time& runTime,
             const word& region = dynamicFvMesh::defaultRegion
@@ -152,13 +148,14 @@ public:
 
     // Destructor
 
-        virtual ~sonicFluid()
+        virtual ~pimpleSonicFluid()
         {}
 
 
     // Member Functions
 
         // Access
+            virtual void setDeltaT(Time& runTime);
 
             //- Patch viscous force (N/m2)
             virtual tmp<vectorField> patchViscousForce
@@ -172,7 +169,7 @@ public:
                 const label patchID
             ) const;
 
-
+ 
         // Edit
 
             //- Evolve the fluid model
