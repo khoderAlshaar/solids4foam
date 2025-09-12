@@ -165,15 +165,17 @@ void tractionLinearMomentumFvPatchVectorField::updateCoeffs()
         lm_C = lm_M_ + (S_t_ & ((t_P_) - t_M_));
     }
 
-    // else if (loadingType_ == "pressure")
-    // {
-    //     p_P_ = pressureSeries_(db().time().timeOutputValue());
+    else if (loadingType_ == "pressure")
+    {
+        // p_P_ = pressureSeries_(db().time().timeOutputValue());
 
-    //     const fvsPatchField<vector>& n_ =
-    //         patch().lookupPatchField<surfaceVectorField, vector>("n");
+        const fvsPatchField<vector>& n_ =
+            patch().lookupPatchField<surfaceVectorField, vector>("ns");
+    // const vectorField n_(patch.nf());
 
-    //     lm_C = lm_M_ + (S_t_ & ((-p_P_*n_) - t_M_));
-    // }
+
+        lm_C = lm_M_ + (S_t_ & ((-p_P_*n_) - t_M_));
+    }
 
     else
     {

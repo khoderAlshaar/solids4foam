@@ -19,6 +19,7 @@ License
 
 #include "principalStressFields.H"
 
+
 // * * * * * * * * * * * * * * * * * * Functions * * * * * * * * * * * * * * //
 
 void Foam::calculateEigenValues

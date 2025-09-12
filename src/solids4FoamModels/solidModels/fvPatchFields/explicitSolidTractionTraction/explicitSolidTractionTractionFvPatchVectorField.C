@@ -361,7 +361,17 @@ void explicitSolidTractionTractionFvPatchVectorField::updateCoeffs()
     else if (pressureSeries_.size())
     {
         pressure_ = pressureSeries_(this->db().time().timeOutputValue());
+
+        //     // Patch unit normals
+        // const vectorField n(patch.nf());
+
+        // const fvsPatchField<vector>& n_
+        //     = patch().lookupPatchField<surfaceVectorField, vector>("n");
+
+        // traction_ = -pressure_*n_;
     }
+
+    // if dict.found("pressure")
 
     scalarField press(pressure_);
     if (setEffectiveTraction_)

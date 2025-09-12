@@ -167,15 +167,15 @@ void tractionTractionFvPatchVectorField::updateCoeffs()
         t_C = t_P_;
     }
 
-    // else if (loadingType_ == "pressure")
-    // {
-    //     p_P_ = pressureSeries_(db().time().timeOutputValue());
+    else if (loadingType_ == "pressure")
+    {
+        // p_P_ = pressureSeries_(db().time().timeOutputValue());
 
-    //     const fvsPatchField<vector>& n_
-    //         = patch().lookupPatchField<surfaceVectorField, vector>("n");
+        const fvsPatchField<vector>& n_
+            = patch().lookupPatchField<surfaceVectorField, vector>("ns");
 
-    //     t_C = -p_P_*n_;
-    // }
+        t_C = -p_P_*n_;
+    }
 
     else
     {

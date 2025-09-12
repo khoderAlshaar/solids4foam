@@ -1,0 +1,75 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     4.1                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    rho 
+    {
+      solver          diagonal;
+      print           false;
+    }
+
+  rhoU 
+    {
+      solver          diagonal;
+      print           false;
+    }
+
+  rhoE 
+    {
+      solver          diagonal;
+      print           false;
+    }
+
+    p
+    {
+    }
+
+    U
+    {
+    }
+
+    T
+    {
+    }
+    cellDisplacement
+    {
+      solver          PCG;
+      preconditioner  DIC;
+      tolerance       1e-8;
+      relTol          0;
+    }
+
+
+}
+
+multiStage
+{
+    numberSubCycles 2000;
+    tolerance 1e-5;
+    reTol 1e-4;
+}
+
+
+fieldBounds
+{
+    // With bounding
+    rho 0.0001 1000;
+    p   0.0001e5 1000e5;
+    T   0.0001 1000;
+    U   -1e-6 1000;
+}
+// ************************************************************************* //

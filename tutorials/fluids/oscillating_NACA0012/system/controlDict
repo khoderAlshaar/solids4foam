@@ -1,0 +1,111 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  4.x                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+application     solids4Foam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         0.157193413007367e1;
+
+deltaT          1e-3;
+
+writeControl    timeStep;
+
+writeInterval   1;
+
+purgeWrite      10;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+adjustTimeStep  no;
+
+maxCo           0.2;
+
+maxDeltaT       0.16e-2;
+
+
+functions
+{
+    minMaxP
+    {
+        type minMaxField;
+        functionObjectLibs ("libfieldFunctionObjects.so");
+        name p;
+    }
+
+    minMaxT
+    {
+        type minMaxField;
+        functionObjectLibs ("libfieldFunctionObjects.so");
+        name T;
+    }
+
+    minMaxRho
+    {
+        type minMaxField;
+        functionObjectLibs ("libfieldFunctionObjects.so");
+        name rho;
+    }
+
+    minMaxU
+    {
+        type minMaxField;
+        functionObjectLibs ("libfieldFunctionObjects.so");
+        name U;
+    }
+
+    forces
+    {
+        type        forceCoeffs;
+        functionObjectLibs ( "libforces.so" );
+        outputControl timeStep;
+        outputInterval 1;
+        patches
+        (
+            wall
+        );
+        pName       p;
+        UName       U;
+        log         true;
+        rhoInf      0.907;
+        CofR        (0.25 0 0);
+        liftDir     (0 1 0 );
+        dragDir     ( 1 0 0 );
+        pitchAxis   ( 0 0 1 );
+        magUInf     245.2;
+        lRef        1;
+        Aref        0.1;
+    }
+
+}
+
+// ************************************************************************* //

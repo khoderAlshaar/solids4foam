@@ -365,10 +365,23 @@ void explicitSolidTractionLinearMomentumFvPatchVectorField::updateCoeffs()
     if (pressureFieldPtr_.valid())
     {
         pressure_ = pressureFieldPtr_().boundaryField()[patch().index()];
+
+        //             // Patch unit normals
+        //  const vectorField n(patch.nf());
+
+        // const fvsPatchField<vector>& n_= patch().lookupPatchField<surfaceVectorField, vector>("n");
+
+        // traction_ = -pressure_*n_;
+
     }
     else if (pressureSeries_.size())
     {
         pressure_ = pressureSeries_(this->db().time().timeOutputValue());
+
+        const fvsPatchField<vector>& n_= patch().lookupPatchField<surfaceVectorField, vector>("n");
+
+        traction_ = -pressure_*n_;
+
     }
 
     scalarField press(pressure_);

@@ -58,6 +58,23 @@ fluidModels/pimpleFluid/pimpleFluid.C
 fluidModels/pimpleOversetFluid/pimpleOversetFluid.C
 fluidModels/sonicLiquidFluid/sonicLiquidFluid.C
 
+fluidModels/newdbnFluid/newdbnFluid.C
+
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/dbnsFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/roeALEFlux/roeALEFlux.C
+
+
+fluidModels/dbnsDyMFluid/myDbnsLib/numericFlux/numericFlux.C
+
+fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/localTimeStep/localTimeStep.C
+fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/backwardDualDdtScheme/backwardDualDdtSchemes.C
+fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/myBackwardDualDdtScheme/myBackwardDualDdtSchemes.C
+fluidModels/dbnsDyMFluid/dbnsDyMFluid.C
+
+
+
+
+
 fluidSolidInterfaces/fluidSolidInterface/fluidSolidInterface.C
 fluidSolidInterfaces/AitkenCouplingInterface/AitkenCouplingInterface.C
 fluidSolidInterfaces/fixedRelaxationCouplingInterface/fixedRelaxationCouplingInterface.C
@@ -182,6 +199,9 @@ $(fluidFvPatchFields)/skewCorrectedLinearDC/skewCorrectedLinearDC.C
 $(fluidFvPatchFields)/transitionalParabolicVelocity/transitionalParabolicVelocityFvPatchVectorField.C
 $(fluidFvPatchFields)/thermalRobin/thermalRobinFvPatchScalarField.C
 $(fluidFvPatchFields)/flowRateOutletPressure/flowRateOutletPressureFvPatchScalarField.C
+
+$(fluidFvPatchFields)/movingWallSlipVelocity/movingWallSlipVelocityFvPatchVectorField.C
+$(fluidFvPatchFields)/subsonicInletTotal/subsonicInletTotalFvPatchVectorField.C
 
 fluidModels/pointPatchFields/timeVaryingVelocity/timeVaryingVelocityPointPatchVectorField.C
 
