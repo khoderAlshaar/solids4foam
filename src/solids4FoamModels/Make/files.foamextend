@@ -58,13 +58,13 @@ fluidModels/pimpleFluid/pimpleFluid.C
 fluidModels/pimpleOversetFluid/pimpleOversetFluid.C
 fluidModels/sonicLiquidFluid/sonicLiquidFluid.C
 
-fluidModels/newdbnFluid/newdbnFluid.C
 
-fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/dbnsFlux.C
+
 fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/roeALEFlux/roeALEFlux.C
 
-
-fluidModels/dbnsDyMFluid/myDbnsLib/numericFlux/numericFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/basicNumericFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/newBasicNumericFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/numericFlux/numericFluxes.C
 
 fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/localTimeStep/localTimeStep.C
 fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/backwardDualDdtScheme/backwardDualDdtSchemes.C

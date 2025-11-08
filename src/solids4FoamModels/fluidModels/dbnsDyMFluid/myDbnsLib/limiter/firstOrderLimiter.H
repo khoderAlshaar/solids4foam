@@ -22,25 +22,20 @@ License
     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    roeALEFlux
+    firstOrderLimiter
 
 Description
-    Implementation of inviscid numerical fluxes based on Roe & Pike FDS scheme
-    with Harten's entropy fix. This is a first order scheme
+    First order limiter: all second order terms are removed
 
 Author
-    Aleksandar Jemcov
-    Rewrite by Hrvoje Jasak
-
-SourceFiles
-    roeALEFlux.H
+    Hrvoje Jasak
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef roeALEFlux_H
-#define roeALEFlux_H
+#ifndef firstOrderLimiter_H
+#define firstOrderLimiter_H
 
-#include "fvCFD.H"
+#include "vector.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -48,52 +43,57 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class roeALEFlux Declaration
+                      Class firstOrderLimiter Declaration
 \*---------------------------------------------------------------------------*/
 
-class roeALEFlux
+class firstOrderLimiter
 {
 public:
 
-    // Constructors
+    // Constructor
 
         //- Construct null
-        roeALEFlux()
+        firstOrderLimiter()
         {}
 
 
     // Destructor - default
 
 
-    // Member Functions
+    // Member functions
 
-        //- Update fluxes based on current left and right states
-        void evaluateFlux
+        //- Set scalar limiter value
+        inline void limiter
         (
-            scalar& rhoFlux,
-            vector& rhoUFlux,
-            scalar& rhoEFlux,
-            const scalar& pLeft,
-            const scalar& pRight,
-            const vector& ULeft,
-            const vector& URight,
-            const scalar& TLeft,
-            const scalar& TRight,
-            const scalar& RLeft,
-            const scalar& RRight,
-            const scalar& CvLeft,
-            const scalar& CvRight,
-            const vector& Sf,
-            const scalar& magSf,
-            const scalar& meshPhi
-        ) const;
+            scalar& lim,
+            const scalar& cellVolume,
+            const scalar& deltaOneMax,
+            const scalar& deltaOneMin,
+            const scalar& deltaTwo
+        )
+        {
+            lim = 0;
+        }
+
+        //- Set Type limiter
+        template<class Type>
+        inline void limiter
+        (
+            Type& lim,
+            const scalar& cellVolume,
+            const Type& deltaOneMax,
+            const Type& deltaOneMin,
+            const Type& extrapolate
+        )
+        {
+            lim = pTraits<Type>::zero;
+        }
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
 

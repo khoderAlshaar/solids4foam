@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     4.1
+   \\    /   O peration     | Version:     4.0
     \\  /    A nd           | Web:         http://www.foam-extend.org
      \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
@@ -22,25 +22,19 @@ License
     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    roeALEFlux
+    BarthJespersenLimiter
 
 Description
-    Implementation of inviscid numerical fluxes based on Roe & Pike FDS scheme
-    with Harten's entropy fix. This is a first order scheme
+    Barth-Jespersen limiter
 
 Author
     Aleksandar Jemcov
     Rewrite by Hrvoje Jasak
 
-SourceFiles
-    roeALEFlux.H
-
 \*---------------------------------------------------------------------------*/
 
-#ifndef roeALEFlux_H
-#define roeALEFlux_H
-
-#include "fvCFD.H"
+#ifndef BarthJespersenLimiter_H
+#define BarthJespersenLimiter_H
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -48,52 +42,79 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class roeALEFlux Declaration
+                    Class BarthJespersenLimiter Declaration
 \*---------------------------------------------------------------------------*/
 
-class roeALEFlux
+class BarthJespersenLimiter
 {
 public:
 
     // Constructors
 
         //- Construct null
-        roeALEFlux()
+        BarthJespersenLimiter()
         {}
 
 
     // Destructor - default
 
 
-    // Member Functions
+    // Member functions
 
-        //- Update fluxes based on current left and right states
-        void evaluateFlux
+        //- Set scalar limiter value
+        inline void limiter
         (
-            scalar& rhoFlux,
-            vector& rhoUFlux,
-            scalar& rhoEFlux,
-            const scalar& pLeft,
-            const scalar& pRight,
-            const vector& ULeft,
-            const vector& URight,
-            const scalar& TLeft,
-            const scalar& TRight,
-            const scalar& RLeft,
-            const scalar& RRight,
-            const scalar& CvLeft,
-            const scalar& CvRight,
-            const vector& Sf,
-            const scalar& magSf,
-            const scalar& meshPhi
-        ) const;
+            scalar& lim,
+            const scalar& cellVolume,
+            const scalar& deltaOneMax,
+            const scalar& deltaOneMin,
+            const scalar& extrapolate
+        )
+        {
+            if (mag(extrapolate) < SMALL)
+            {
+                return;
+            }
+
+            if (extrapolate - deltaOneMax > SMALL)
+            {
+                lim = min(lim, deltaOneMax/extrapolate);
+            }
+            else if (extrapolate - deltaOneMin < -SMALL)
+            {
+                lim = min(lim, deltaOneMin/extrapolate);
+            }
+        }
+
+        //- Set Type limiter
+        template<class Type>
+        inline void limiter
+        (
+            Type& lim,
+            const scalar& cellVolume,
+            const Type& deltaOneMax,
+            const Type& deltaOneMin,
+            const Type& extrapolate
+        )
+        {
+            for (direction cmpt = 0; cmpt < Type::nComponents; cmpt++)
+            {
+                limiter
+                (
+                    lim.component(cmpt),
+                    cellVolume,
+                    deltaOneMax.component(cmpt),
+                    deltaOneMin.component(cmpt),
+                    extrapolate.component(cmpt)
+                );
+            }
+        }
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
 

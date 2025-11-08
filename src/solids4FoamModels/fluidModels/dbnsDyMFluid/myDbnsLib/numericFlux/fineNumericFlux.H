@@ -22,28 +22,31 @@ License
     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    numericFlux
+    fineNumericFlux
 
 Description
-    Single level numeric flux class for density-based solvers
+    Fine-level numeric flux class for density-based solvers
 
 Author
     Aleksandar Jemcov
     Rewrite by Hrvoje Jasak
 
 SourceFiles
-    numericFlux.H
-    numericFlux.C
+    fineNumericFlux.H
+    fineNumericFlux.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef numericFlux_H
-#define numericFlux_H
+#ifndef fineNumericFlux_H
+#define fineNumericFlux_H
 
-#include "numericFluxBase.H"
+#include "fvMesh.H"
+#include "volFields.H"
+#include "surfaceFields.H"
 #include "basicThermo.H"
-#include "fvc.H"
-#include "tmp.H"
+
+#include "mgMeshLevel.H"
+#include "mgFieldLevel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,15 +54,22 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                          Class numericFlux Declaration
+                       Class fineNumericFlux Declaration
 \*---------------------------------------------------------------------------*/
 
 template<class Flux, class Limiter>
-class numericFlux
+class fineNumericFlux
 :
     public numericFluxBase<Flux>
 {
     // Private data
+
+        //- Reference to fine mesh level
+        const mgMeshLevel& meshLevel_;
+
+        //- Reference to fine fields level
+        const mgFieldLevel& fieldLevel_;
+
 
         // Reference to primitive fields
 
@@ -75,19 +85,17 @@ class numericFlux
             //- Reference to the thermophysicalModel
             basicThermo& thermo_;
 
-            // surfaceScalarField meshPhi_;
-
 
         // Fluxes
 
             //- Density flux
-            surfaceScalarField rhoFlux_;
+            surfaceScalarField& rhoFlux_;
 
             //- Velocity flux
-            surfaceVectorField rhoUFlux_;
+            surfaceVectorField& rhoUFlux_;
 
             //- Energy flux
-            surfaceScalarField rhoEFlux_;
+            surfaceScalarField& rhoEFlux_;
 
 
         // Gradients: no longer stored.  HJ, 22/Apr/2016
@@ -96,10 +104,10 @@ class numericFlux
     // Private Member Functions
 
         //- Disallow default bitwise copy construct
-        numericFlux(const numericFlux&);
+        fineNumericFlux(const fineNumericFlux&);
 
         //- Disallow default bitwise assignment
-        void operator=(const numericFlux&);
+        void operator=(const fineNumericFlux&);
 
 
         //- Return internal field of mass flux
@@ -141,27 +149,31 @@ class numericFlux
 
 public:
 
-    //- Runtime type information
-    TypeName("numericFlux");
-
     // Constructors
 
         //- Construct from components
-        numericFlux
+        fineNumericFlux
         (
-            const volScalarField& p,
-            const volVectorField& U,
-            const volScalarField& T,
+            const mgMeshLevel& meshLevel,
+            const mgFieldLevel& fieldLevel,
             basicThermo& thermo
         );
 
 
+
     //- Destructor
-    virtual ~numericFlux()
+    virtual ~fineNumericFlux()
     {}
 
 
     // Member Functions
+
+        //- Return mesh reference
+        const fvMesh& mesh() const
+        {
+            return meshLevel_.mesh();
+        }
+
 
         // Return fluxes
 
@@ -183,17 +195,6 @@ public:
                 return rhoEFlux_;
             }
 
-            // //- Return mesh flux
-            // const surfaceScalarField& meshPhi() const
-            // {
-            //     return meshPhi_;
-            // }
-
-            // //- Return mesh flux
-            // surfaceScalarField& meshPhi()
-            // {
-            //     return meshPhi_;
-            // }
 
        // Return residuals
 
@@ -220,9 +221,6 @@ public:
 
             //- Compute flux
             virtual void computeFlux();
-
-
-            tmp<Foam::surfaceScalarField> meshPhi() const;
 };
 
 
@@ -231,7 +229,7 @@ public:
 } // End namespace Foam
 
 #ifdef NoRepository
-#   include "numericFlux.C"
+#   include "fineNumericFlux.C"
 #endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

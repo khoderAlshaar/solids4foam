@@ -104,22 +104,9 @@ dbnsDyMFluid::dbnsDyMFluid
         rho_*(h_ + 0.5*magSqr(U())) - p()
     ),
     
-    // dbnsFluxPtr_ 
-    // (
-    //     // basicNumericFlux::New
-    //     // (
-            // p(),
-            // U(),
-            // T_,
-            // thermo_
-    //     // )
-    // ),
-    
-    // dbnsFlux_ (dbnsFluxPtr_()),
-    
     dbnsFluxPtr_ 
     (
-        new numericFlux
+        basicNumericFlux::New
         (
             p(),
             U(),
@@ -129,6 +116,19 @@ dbnsDyMFluid::dbnsDyMFluid
     ),
     
     dbnsFlux_ (dbnsFluxPtr_()),
+    
+    // dbnsFluxPtr_ 
+    // (
+    //     new numericFlux
+    //     (
+    //         p(),
+    //         U(),
+    //         T_,
+    //         thermo_
+    //     )
+    // ),
+    
+    // dbnsFlux_ (dbnsFluxPtr_()),
 
 
     turbulence_
@@ -438,8 +438,8 @@ bool dbnsDyMFluid::evolve()
     Time& runTime = runTime_;
     dynamicFvMesh& mesh = this->mesh();
     basicPsiThermo& thermo = thermo_;
-    // basicNumericFlux& dbnsFlux = dbnsFlux_;
-    numericFlux& dbnsFlux = dbnsFlux_;
+    basicNumericFlux& dbnsFlux = dbnsFlux_;
+    // numericFlux& dbnsFlux = dbnsFlux_;
     volVectorField& U = this->U();
     volScalarField& p = this->p();
     volScalarField& h = this->h_;

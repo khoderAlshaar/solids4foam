@@ -39,12 +39,12 @@ SourceFiles
 #include "singlePhaseTransportModel.H"
 #include "turbulenceModel.H"
 #include "myTurbulenceModel.H"
-// #include "bound.H"
-// #include "roeALEFlux.H"
-// #include "MDLimiter.H"
-// #include "firstOrderLimiter.H"
-// #include "BarthJespersenLimiter.H"
-// #include "VenkatakrishnanLimiter.H"
+#include "bound.H"
+#include "roeALEFlux.H"
+#include "MDLimiter.H"
+#include "firstOrderLimiter.H"
+#include "BarthJespersenLimiter.H"
+#include "VenkatakrishnanLimiter.H"
 #include "numericFlux.H"
 #include "backwardDualDdtScheme.H"
 #include "myBackwardDualDdtScheme.H"  
@@ -86,13 +86,13 @@ class dbnsDyMFluid
 
 
 
-        // autoPtr<basicNumericFlux> dbnsFluxPtr_;
+        autoPtr<basicNumericFlux> dbnsFluxPtr_;
     
-        // basicNumericFlux& dbnsFlux_;
+        basicNumericFlux& dbnsFlux_;
 
-        autoPtr<numericFlux> dbnsFluxPtr_;
+        // autoPtr<numericFlux> dbnsFluxPtr_;
     
-        numericFlux& dbnsFlux_;
+        // numericFlux& dbnsFlux_;
 
 
 
