@@ -22,10 +22,10 @@ License
     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
-
+  
 #include "numericFlux.H"
 #include "MDLimiter.H"
-#include "tmp.H"
+#include "tmp.H" 
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -59,7 +59,7 @@ Foam::numericFlux<Flux, Limiter>::numericFlux
     ),
     rhoUFlux_
     (
-        IOobject
+        IOobject 
         (
             "rhoUFlux",
             this->mesh().time().timeName(),
@@ -80,7 +80,7 @@ Foam::numericFlux<Flux, Limiter>::numericFlux
             IOobject::NO_WRITE
         ),
         rhoFlux_*linearInterpolate(thermo.Cv()*T_ + 0.5*magSqr(U_))
-    )//,
+    ),
     
     // meshPhi_
     // (
@@ -94,8 +94,36 @@ Foam::numericFlux<Flux, Limiter>::numericFlux
     //     ),
     //     this->mesh(),
     //     dimensionedScalar("0", dimVolume/dimTime, 0.0)
-    // )
-{}
+    // )//, 
+        
+     thermoDict
+        (
+            IOobject
+            (
+                "thermophysicalProperties",
+                 this->mesh().time().constant(),
+                 this->mesh(),
+                IOobject::MUST_READ_IF_MODIFIED,
+                IOobject::NO_WRITE
+            )
+            
+        )
+{
+                word thermoTypeName;
+
+            thermoDict.lookup("thermoType") >> thermoTypeName;
+            if (thermoTypeName == "externalStiffenedGasThermo")
+            {
+                const dictionary& d = thermoDict.subDict("stiffenedGasCoeffs");
+                d.lookup("pInf") >> pInf;
+                d.lookup("q") >> q;
+            }
+            else
+            {
+                 pInf =0 ;
+                q = 0;
+            }
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -120,6 +148,7 @@ void Foam::numericFlux<Flux, Limiter>::computeFlux()
     surfaceScalarField mshPhi( meshPhi() );
     // Thermodynamics
     const volScalarField Cv = thermo_.Cv();
+    const volScalarField Cp = thermo_.Cp();
     const volScalarField R  = thermo_.Cp() - Cv;
 
     // Get gradients
@@ -186,7 +215,9 @@ void Foam::numericFlux<Flux, Limiter>::computeFlux()
             Cv[nei],
             Sf[faceI],
             magSf[faceI],
-            mshPhi[faceI]
+            mshPhi[faceI],
+            pInf,
+            q
         );
     }
 
@@ -316,7 +347,9 @@ void Foam::numericFlux<Flux, Limiter>::computeFlux()
                     pCv[facei],
                     pSf[facei],
                     pMagSf[facei],
-                    pMeshPhi[facei]
+                    pMeshPhi[facei],
+                    pInf,
+                    q
                 );
             }
         }
@@ -342,7 +375,9 @@ void Foam::numericFlux<Flux, Limiter>::computeFlux()
                     pCv[facei],
                     pSf[facei],
                     pMagSf[facei],
-                    pMeshPhi[facei]
+                    pMeshPhi[facei],
+                    pInf,
+                    q
 
                 );
             }

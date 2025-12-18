@@ -51,6 +51,8 @@ SourceFiles
 // #include "dynamicFvMesh.H"
 
 #include "localTimeStep.H"
+#include "ConvergenceControl.H"
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -78,6 +80,13 @@ class dbnsDyMFluid
         // volScalarField& p_;
         const volScalarField& T_;
 
+        // //-stiffened gas constants
+        IOdictionary thermoDict;
+
+        // scalar gamma;
+
+        const dimensionedScalar pInf;
+        const dimensionedScalar q;
                 // //- Fluid density
         volScalarField rho_;
         // volVectorField U_;
@@ -104,9 +113,10 @@ class dbnsDyMFluid
         localTimeStep localTimeStep_;
         volScalarField CoDeltaT_;
         dimensionedScalar pseudoTimeStep_;
-        label numberSubCycles_;
-        scalar tolerance_;
-        scalar relTol_;
+        // label numberSubCycles_;
+        // scalar tolerance_;
+        // scalar relTol_;
+        ConvergenceControl conv;
 
 
         // volScalarField K_;

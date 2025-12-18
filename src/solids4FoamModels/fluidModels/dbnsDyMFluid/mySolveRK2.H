@@ -54,10 +54,14 @@
       solve
       (
           fvm::ddt(rhoU) == - fvc::div(dbnsFlux.rhoUFlux())
+                            - fvc::div(turbulence_->devRhoReff())
+
       );      
       solve
       (
           fvm::ddt(rhoE) == - fvc::div(dbnsFlux.rhoEFlux())
+                            - fvc::div(turbulence_->devRhoReff() & U)
+                            + fvc::laplacian(turbulence_->alphaEff(), h)
       );
 
 
@@ -73,6 +77,7 @@
 
 
       #include "newUpdateFields.H"
+      turbulence_->correct();
     if (mesh.moving())
     {
         phi = (linearInterpolate(rho*U) & mesh.Sf()) - (fvc::meshPhi(U) *fvc::interpolate(rho)); //?
@@ -85,19 +90,7 @@
           // turbulence->correct();    
 
   }
-  while
-  (
-    !converged
-        (
-          iCorr,
-          pseudoTimeStep,
-          rho,
-          numberSubCycles,
-          tolerance
-        )
-  && ++iCorr < numberSubCycles //&& rhoResNorm < tolerance
-  );
-  Info << " ------------------- solution converged ---- icor = "<<iCorr<<"---------- "<<endl;
-// #       include "updateDualTimeSteppingFields.H"
+while (!conv.pseudoConverged(iCorr, pseudoTimeStep, rho, rhoU, rhoE) && ++iCorr < conv.pseudoMaxIters());
+turbulence_->correct();
 
 }

@@ -27,6 +27,8 @@ License
 
 
 #include "roeALEFlux.H"
+#include "SGL2RoeFlux.H"
+// #include "roeALELowMaFlux.H"
 
 #include "firstOrderLimiter.H"
 #include "BarthJespersenLimiter.H"
@@ -46,6 +48,7 @@ makeBasicNumericFlux(Flux, VenkatakrishnanLimiter);
 
 // makeBasicNumericFluxForAllLimiters(roeFlux);
 makeBasicNumericFluxForAllLimiters(roeALEFlux);
+makeBasicNumericFluxForAllLimiters(SGL2RoeFlux);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

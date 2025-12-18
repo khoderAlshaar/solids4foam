@@ -89,6 +89,9 @@ class numericFlux
             //- Energy flux
             surfaceScalarField rhoEFlux_;
 
+            IOdictionary thermoDict ; 
+            scalar pInf;
+            scalar q;
 
         // Gradients: no longer stored.  HJ, 22/Apr/2016
 

@@ -61,6 +61,11 @@ fluidModels/sonicLiquidFluid/sonicLiquidFluid.C
 
 
 fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/roeALEFlux/roeALEFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/SGL2RoeFlux/SGL2RoeFlux.C
+
+
+fluidModels/dbnsDyMFluid/myDbnsLib/ConvergenceControl/ConvergenceControl.H
+fluidModels/dbnsDyMFluid/myDbnsLib/externalStiffenedGasThermo/externalStiffenedGasThermo.C
 
 fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/basicNumericFlux.C
 fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/newBasicNumericFlux.C

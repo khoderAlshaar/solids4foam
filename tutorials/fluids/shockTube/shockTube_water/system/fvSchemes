@@ -1,0 +1,72 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     4.1                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// dbnsFlux roeFlux;
+
+ddtSchemes
+{
+    // default Euler;
+    ddt(rho)       myBackwardDual physDeltaT CoDeltaT;
+    ddt(rhoU)      myBackwardDual physDeltaT CoDeltaT;
+    ddt(rhoE)      myBackwardDual physDeltaT CoDeltaT;
+    ddt(U)         myBackwardDual physDeltaT CoDeltaT;
+    // ddt(p)      backward;
+
+}
+
+gradSchemes
+{
+    // default          Gauss linear corrected;
+    default          leastSquares;
+    limitedGauss    cellLimited Gauss linear 1;
+    limitedLSQR     cellLimited leastSquares 1;
+    venkatakrishnan leastSquares Gauss linear 1;
+}
+
+
+divSchemes
+{
+    default none;
+    dbns
+    {
+        flux    SGL2Roe;
+        limiter BarthJespersen; //Venkatakrishnan 
+    }
+    default         none;
+    div(phi,k)      Gauss upwind;
+    div(phi,epsilon) Gauss upwind;
+    div(devRhoReff) Gauss linear;
+    div((devRhoReff&U)) Gauss linear;
+
+    div((muEff*dev2(T(grad(U))))) Gauss linear;
+}
+
+laplacianSchemes
+{
+        default         none;
+    laplacian(muEff,U) Gauss linear limited 0.5;
+    laplacian(DkEff,k) Gauss linear limited 0.5;
+    laplacian(DepsilonEff,epsilon) Gauss linear limited 0.5;
+    laplacian(alphaEff,e) Gauss linear limited 0.5;
+    laplacian(alphaEff,h) Gauss linear limited 0.5;
+}
+
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+// ************************************************************************* //

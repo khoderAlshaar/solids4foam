@@ -1,0 +1,71 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.6                                   |
+|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [1 -1 -2 0 0 0 0];
+
+internalField   uniform 1e5;
+
+boundaryField
+{
+    emptyPlanes
+    {
+        type            empty;
+    }
+    "(.*Wall)"
+    {
+        type            zeroGradient;
+    }
+    inlet
+    {
+        type            zeroGradient;        
+
+        // type            mytotalPressure;
+        // rho             none;
+        // psi             psi;
+        // gamma           1.4;
+        // p0              uniform 1e5;
+        // value           uniform 99993.00;
+
+        // type            farfieldRiemann;
+        // fieldType       pressure;
+        // UInf            (3.471852 0 0);
+        // pInf            1e5;
+        // TInf            300;
+        // gamma           1.4;
+        // R               287.058;
+        // UName           U;
+        // TName           T;
+        // value           uniform 1e5;
+    }
+
+    outlet
+    {
+        type fixedValue;
+        value		uniform 99993.00;
+        // type            farfieldRiemann;
+        // fieldType       pressure;
+        // UInf            (3.471852 0 0);
+        // pInf            1e5;
+        // TInf            300;
+        // gamma           1.4;
+        // R               287.058;
+        // UName           U;
+        // TName           T;
+        // value           uniform 1e5;
+    }
+}
+
+// ************************************************************************* //

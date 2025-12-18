@@ -1,0 +1,41 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     4.1                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// thermoType     stiffenedGasHThermo<pureMixture<constTransport<stiffenedGasSpecieThermo<hConstStiffenedGasThermo<stiffenedGas>>>>>;
+thermoType     externalStiffenedGasThermo ;//externalStiffenedGasThermo;
+
+// //              name, nMoles, molWeight,  gamma,     pInf,          CP,        gamma,     pInf,          CP,          Hf, mu,  Pr;
+// mixture         water    1      28.97       1.93293    1.13466e+09    8034.56    1.93293    1.13466e+09    8034.56       0   0   0.7;
+
+//              name, nMoles, molWeight,  gamma,     pInf,     CP,        gamma,     pInf,  CP,      Hf, mu,  Pr;
+mixture         air    1      28.97       1.4        0         1005          1.4      0     1005      0     0   0.7   11;
+
+
+gamma  1.4;
+pInf 0;
+cp 1005;
+
+stiffenedGasCoeffs
+{
+    gamma  1.4;
+    pInf 0;
+    Cv 718;
+    q 0;
+    mu 0;
+    Pr 0.7;
+};
+
+// ************************************************************************* //

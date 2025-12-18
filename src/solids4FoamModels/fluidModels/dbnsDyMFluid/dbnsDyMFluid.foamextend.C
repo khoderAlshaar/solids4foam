@@ -66,6 +66,31 @@ dbnsDyMFluid::dbnsDyMFluid
      thermo_(pThermo_()),
     h_ (thermo_.h()),
     T_ (thermo_.T()),
+    
+    thermoDict
+    (
+        IOobject
+        (
+            "thermophysicalProperties",
+           runTime.constant(),
+            mesh(),
+            IOobject::MUST_READ_IF_MODIFIED,
+            IOobject::NO_WRITE
+        )
+    ),
+    pInf
+    (
+        "pInf",
+        dimPressure,
+        thermoDict.subDict("stiffenedGasCoeffs").lookupOrDefault<scalar>("pInf", 0.0)
+    ),
+    q
+    (
+        "q",
+         dimEnergy/dimMass,
+        thermoDict.subDict("stiffenedGasCoeffs").lookupOrDefault<scalar>("q", 0.0)
+    ),
+    
     rho_
     (
         IOobject
@@ -101,7 +126,8 @@ dbnsDyMFluid::dbnsDyMFluid
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        rho_*(h_ + 0.5*magSqr(U())) - p()
+        // rho_*(h_ + 0.5*magSqr(U())) - p()
+        rho_*(((p() + (thermo_.Cp()/thermo_.Cv())*pInf)/(p() + pInf) )*thermo_.Cv() * T_ + q) + 0.5*rho_*magSqr(U())
     ),
     
     dbnsFluxPtr_ 
@@ -169,18 +195,19 @@ dbnsDyMFluid::dbnsDyMFluid
         dimensionedScalar("CoDeltaT_", dimTime, 0.1)
     ),
     pseudoTimeStep_ ("pseudoTimeStep", dimTime, 0.0),
-    numberSubCycles_
-    (
-        fluidProperties().lookupOrDefault<label>("numberSubCycles", 1)
-    ),
-    tolerance_
-    (
-        fluidProperties().lookupOrDefault<scalar>("tolerance", 1e-6)
-    ),
-    relTol_
-    (
-        fluidProperties().lookupOrDefault<scalar>("relTol", 1e-6)
-    ),
+    // numberSubCycles_
+    // (
+    //     fluidProperties().lookupOrDefault<label>("numberSubCycles", 1)
+    // ),
+    // tolerance_
+    // (
+    //     fluidProperties().lookupOrDefault<scalar>("tolerance", 1e-6)
+    // ),
+    // relTol_
+    // (
+    //     fluidProperties().lookupOrDefault<scalar>("relTol", 1e-6)
+    // ),
+    conv(runTime, mesh()),
 
     adjustTimeStep_
     (
@@ -198,7 +225,8 @@ dbnsDyMFluid::dbnsDyMFluid
 {
 
 
-
+    conv.read(mesh().solutionDict());
+    
     // UisRequired();
     // pisRequired();
 
@@ -282,120 +310,7 @@ dbnsDyMFluid::dbnsDyMFluid
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-bool dbnsDyMFluid::converged
-(
-    const int iCorr,
-    const dimensionedScalar pDeltaT,
-    // const volVectorField& vf
-    const volScalarField& vf,
-    const label numberSubCycles,
-    scalar tolerance   
-)
-{
-    // We will check three residuals:
-    // - relative linear momentum residual
 
-    bool converged = false;
-
-    // Calculate residual based on the relative change of vf
-    scalar denom = 0.0;
-
-    // Denom is linear momentum increment
-        denom = gMax
-        (
-#ifdef OPENFOAM_NOT_EXTEND
-            DimensionedField<scalar, volMesh>
-#else
-            Field<scalar>
-#endif
-            (
-                mag(vf.internalField() - vf.oldTime().internalField())
-                // mag(vf.internalField())
-            )
-        );
-
-    if (denom < SMALL)
-    {
-        denom =
-        max
-        (
-            gMax
-            (
-#ifdef OPENFOAM_NOT_EXTEND
-                DimensionedField<scalar, volMesh>(mag(vf.internalField()))
-#else
-                mag(vf.internalField())
-#endif
-            ),
-            SMALL
-        );
-    }
-
-    const scalar residualvf =
-        gMax
-        (
-#ifdef OPENFOAM_NOT_EXTEND
-            DimensionedField<scalar, volMesh>
-            (
-                mag(vf.internalField() - vf.prevIter().internalField())
-            )
-#else
-            mag(vf.internalField() - vf.prevIter().internalField())
-#endif
-        )/denom;
-
-    // If one of the residuals has converged to an order of magnitude
-    // less than the tolerance then consider the solution converged
-    // force at least 1 outer iteration
-   if (residualvf < tolerance)
-    {
-        Info<< "    Converged" << endl;
-        converged = true;
-    }
-
-    // Print residual information
-    if (iCorr == 0)
-    {
-        Info<< "    Corr, res, pDeltaT" << endl;
-    }
-    else if (iCorr % 10 == 0 || converged || iCorr >= numberSubCycles)
-    {
-        Info<< "    " << iCorr
-            << ", " << residualvf
-            << ", " << pDeltaT.value() << endl;
-
-        if (iCorr >= numberSubCycles)
-        {
-            Warning
-                << "Max iterations reached within the momentum loop"
-                << endl;
-            converged = true;
-        }
-    }
-
-    return converged;
- }
-void dbnsDyMFluid::setDeltaT(Time& runTime)
-{
-    //  Info<< "dbnsDyMFluid::setDeltaT(Time& runTime) is off" <<endl;
-       
-        // if (adjustTimeStep)
-        // {
-        //     localTimeStep_.update(maxCo_,adjustTimeStep_);
-        //     runTime.setDeltaT
-        //     (
-        //         min
-        //         (
-        //             min(localTimeStep_.CoDeltaT()).value(),
-        //             maxDeltaT
-        //         )
-        //     );
-        //     numberSubCycles_ = 1;
-        // }
-
-        // Info<< "\n physical Time = " << runTime.value() << endl;
-    
-}
 
 tmp<vectorField> dbnsDyMFluid::patchViscousForce(const label patchID) const
 {
@@ -404,14 +319,18 @@ tmp<vectorField> dbnsDyMFluid::patchViscousForce(const label patchID) const
         new vectorField(mesh().boundary()[patchID].size(), vector::zero)
     );
 
-    // tvF.ref() = 
-    //    (
-    //         mesh().boundary()[patchID].nf()
-    //       & (-turbulence_->devRhoReff()().boundaryField()[patchID])
-    //     );
-
+#ifdef OPENFOAM_NOT_EXTEND
+    tvF.ref() =
+#else
+    tvF() =
+#endif
+       (
+            mesh().boundary()[patchID].nf()
+          & (-turbulence_->devRhoReff()().boundaryField()[patchID])
+        );
     return tvF;
 }
+
 
 tmp<scalarField> dbnsDyMFluid::patchPressureForce(const label patchID) const
 {
@@ -454,9 +373,9 @@ bool dbnsDyMFluid::evolve()
 
 
 
-    label& numberSubCycles = numberSubCycles_;
-    scalar& tolerance = tolerance_;
-    scalar& relTol = relTol_;
+    // label& numberSubCycles = numberSubCycles_;
+    // scalar& tolerance = tolerance_;
+    // scalar& relTol = relTol_;
 
     const Switch& adjustTimeStep = adjustTimeStep_;
 
@@ -474,6 +393,7 @@ bool dbnsDyMFluid::evolve()
 
     #include "readFieldBounds.H"
     #include "readMultiStage.H"
+    conv.read(mesh.solutionDict());
 
     if (adjustTimeStep)
     {
@@ -486,7 +406,7 @@ bool dbnsDyMFluid::evolve()
                 maxDeltaT
             )
         );
-        numberSubCycles = 1;
+        conv.pseudoMaxIters() = 1;
     }
 
     // Info<< "\n physical Time = " << runTime.value() << endl;
@@ -506,6 +426,13 @@ bool dbnsDyMFluid::evolve()
     // #include "mySolve.H"
     // #include "mySolveRK2New.H"
     #include "mySolveRK2.H"
+
+         // After inner loop, check global/physical convergence using oldTime() fields
+    if (conv.physicalConverged(rho, rhoU, rhoE))
+    {
+        runTime.write();
+        // break;
+    }
 
     return 0;
 }

@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2312                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+surfaces
+{
+    type            surfaces;
+    libs            ("sampling");
+    writeControl    writeTime;
+
+    surfaceFormat   raw;
+    fields          (p MaU);
+
+    interpolationScheme cellPoint;  //<- default
+
+surfaces
+{
+    line_on_inlet
+    {
+        type            patch;
+        patches         ("bump");
+        interpolate     yes;
+
+        surfaceFormat   vtk;          // or raw, csv, etc.
+        extractSample   yes;          // ensure line extraction possible
+
+        line
+        {
+            type        uniform;
+            start       (0 0.0 0.0);
+            end         (0 0.1 0.0);
+            nPoints     100;
+        }
+    }
+}
+}
+
+
+// ************************************************************************* //
