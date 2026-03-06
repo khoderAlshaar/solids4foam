@@ -40,7 +40,8 @@ SourceFiles
 #ifndef roeALELowMaFlux_H
 #define roeALELowMaFlux_H
 
-#include "fvCFD.H"
+#include "dbnsFlux.H" 
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,48 +52,47 @@ namespace Foam
                            Class roeALELowMaFlux Declaration
 \*---------------------------------------------------------------------------*/
 
-class roeALELowMaFlux
+class roeALELowMaFlux:
+    public dbnsFlux
 {
 public:
+    TypeName("roeALELowMaFlux");
 
     // Constructors
 
         //- Construct null
-        roeALELowMaFlux()
+        roeALELowMaFlux(const fvMesh&, const dictionary&)
         {}
 
 
-    // Destructor - default
+     // Destructor - default
+    virtual ~roeALELowMaFlux() {};
 
 
     // Member Functions
 
         //- Update fluxes based on current left and right states
-        void evaluateFlux
-        (
-            scalar& rhoFlux,
-            vector& rhoUFlux,
-            scalar& rhoEFlux,
-            const scalar& pLeft,
-            const scalar& pRight,
-            const vector& ULeft,
-            const vector& URight,
-            const scalar& TLeft,
-            const scalar& TRight,
-            const scalar& RLeft,
-            const scalar& RRight,
-            const scalar& CvLeft,
-            const scalar& CvRight,
-            const vector& Sf,
-            const scalar& magSf,
-            const scalar& meshPhi,
-            const scalar& CpLeft,
-            const scalar& CpRight,
-            const scalar& pInf,
-            const scalar& gamma
-        
-        ) const;
+    virtual void evaluateFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi
+    ) const;
 };
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

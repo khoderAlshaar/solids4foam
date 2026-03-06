@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     4.1
+   \\    /   O peration     | Version:     3.2
     \\  /    A nd           | Web:         http://www.foam-extend.org
      \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ SourceFiles
 #ifndef SGL2RoeFlux_H
 #define SGL2RoeFlux_H
 
-#include "fvCFD.H"
+#include "dbnsFlux.H" 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,45 +51,97 @@ namespace Foam
                            Class SGL2RoeFlux Declaration
 \*---------------------------------------------------------------------------*/
 
-class SGL2RoeFlux
+class SGL2RoeFlux:
+public dbnsFlux
 {
+    // privet 
+    scalar pinf;
+    scalar gamma;
+    scalar Cv;
+    scalar q;
 public:
+    TypeName("SGL2RoeFlux");
 
     // Constructors
 
-        //- Construct null
-        SGL2RoeFlux()
-        {}
+    //- Construct null
+    SGL2RoeFlux(const fvMesh& mesh, const dictionary&)
+        {
+            word thermoTypeName;
+            
+                IOdictionary thermoDict
+                (
+                    IOobject
+                    (
+                        "thermophysicalProperties",
+                        mesh.time().constant(),
+                        mesh,
+                        IOobject::MUST_READ_IF_MODIFIED,
+                        IOobject::NO_WRITE
+                    )
+                );
 
+                thermoDict.lookup("thermoType") >> thermoTypeName;
+            
 
+            // if (thermoTypeName == "externalStiffenedGasThermo")
+            // {
+            //     const dictionary& d = thermoDict.subDict("stiffenedGasCoeffs");
+            //     d.lookup("pInf") >> pInf;
+            //     d.lookup("gamma") >> gamma;
+            //     d.lookup("Cv") >> Cv;
+            //     d.lookup("q") >> q;
+            // }
+            if (thermoTypeName == "eRhoThermo<constTransportEos<SGEOS>>")
+            {
+                // const dictionary& d = thermoDict.subDict("stiffenedGasCoeffs");
+                // d.lookup("pInf") >> pInf;
+                // d.lookup("gamma") >> gamma;
+                // d.lookup("Cv") >> Cv;
+                // d.lookup("q") >> q;
+                 
+                // Read thermodynamic properties from thermo dictionary
+                word firstToken;
+                thermoDict.lookup("fluidProperties") >> firstToken >> q
+                >> pinf >> gamma >> Cv;
+            }
+            else
+            {
+                FatalErrorIn("SGL2RoeFlux")
+                << "thermo Type Name = " << thermoTypeName << nl
+                // << " it shoudl be externalStiffenedGasThermo " << nl
+                << " it shoudl be eRhoThermo<constTransportEos<SGEOS>> " << nl
+                << exit(FatalError);
+            }
+        }
+    
+    
     // Destructor - default
-
+    virtual ~SGL2RoeFlux() {};
 
     // Member Functions
 
         //- Update fluxes based on current left and right states
-        void evaluateFlux
-        (
-            scalar& rhoFlux,
-            vector& rhoUFlux,
-            scalar& rhoEFlux,
-            const scalar& pLeft,
-            const scalar& pRight,
-            const vector& ULeft,
-            const vector& URight,
-            const scalar& TLeft,
-            const scalar& TRight,
-            const scalar& RLeft,
-            const scalar& RRight,
-            const scalar& CvLeft,
-            const scalar& CvRight,
-            const vector& Sf,
-            const scalar& magSf,
-            const scalar& meshPhi,
-            const scalar& pInf,
-            const scalar& q
-        ) const;
-        };
+    virtual void evaluateFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi
+    ) const;
+};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

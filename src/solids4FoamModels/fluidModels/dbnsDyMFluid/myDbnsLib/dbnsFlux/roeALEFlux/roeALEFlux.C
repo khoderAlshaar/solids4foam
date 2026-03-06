@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     4.1
+   \\    /   O peration     | Version:     3.2
     \\  /    A nd           | Web:         http://www.foam-extend.org
      \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
@@ -24,6 +24,13 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "roeALEFlux.H"
+#include "addToRunTimeSelectionTable.H"
+
+namespace Foam
+{
+    defineTypeNameAndDebug(roeALEFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, roeALEFlux, dictionary);
+}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
@@ -44,16 +51,19 @@ void Foam::roeALEFlux::evaluateFlux
     const scalar& CvRight,
     const vector& Sf,
     const scalar& magSf,
-    const scalar& meshPhi,
-    const scalar& pInf,
-    const scalar& q
+    const scalar& meshPhi
 ) const
 {
+//   if (mag(meshPhi)>0.0) 
+//     {
+//       FatalError
+//         << "This dbnsFlux is not ready to run with moving meshes." << nl
+//         << exit(FatalError);
+//     };
     // cell face *normal* velocity w_n
-    const scalar w_n = meshPhi / (magSf + VSMALL);
-    // Info << "w_n: " << w_n <<endl;
     // const scalar w_n = 0.0;
-
+   
+    const scalar w_n = meshPhi / (magSf + VSMALL);
     // Step 1: decode rho left and right:
     scalar rhoLeft = pLeft/(RLeft*TLeft);
     scalar rhoRight = pRight/(RRight*TRight);

@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     4.1
+   \\    /   O peration     | Version:     3.2
     \\  /    A nd           | Web:         http://www.foam-extend.org
      \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ SourceFiles
 #ifndef roeALEFlux_H
 #define roeALEFlux_H
 
-#include "fvCFD.H"
+#include "dbnsFlux.H" 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,45 +51,45 @@ namespace Foam
                            Class roeALEFlux Declaration
 \*---------------------------------------------------------------------------*/
 
-class roeALEFlux
+class roeALEFlux:
+public dbnsFlux
 {
 public:
+    TypeName("roeALEFlux");
 
     // Constructors
 
-        //- Construct null
-        roeALEFlux()
+    //- Construct null
+    roeALEFlux(const fvMesh&, const dictionary&)
         {}
-
-
+    
+    
     // Destructor - default
-
+    virtual ~roeALEFlux() {};
 
     // Member Functions
 
         //- Update fluxes based on current left and right states
-        void evaluateFlux
-        (
-            scalar& rhoFlux,
-            vector& rhoUFlux,
-            scalar& rhoEFlux,
-            const scalar& pLeft,
-            const scalar& pRight,
-            const vector& ULeft,
-            const vector& URight,
-            const scalar& TLeft,
-            const scalar& TRight,
-            const scalar& RLeft,
-            const scalar& RRight,
-            const scalar& CvLeft,
-            const scalar& CvRight,
-            const vector& Sf,
-            const scalar& magSf,
-            const scalar& meshPhi,
-            const scalar& pInf,
-            const scalar& q
-        ) const;
-        };
+    virtual void evaluateFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi
+    ) const;
+};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

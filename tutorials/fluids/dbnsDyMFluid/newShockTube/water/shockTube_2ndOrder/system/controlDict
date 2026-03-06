@@ -1,0 +1,86 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     5.0                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  | For copyright notice see file Copyright         |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         400e-06;
+
+deltaT          1e-07;
+
+writeControl    timeStep;
+
+writeInterval   1000;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+graphFormat     raw;
+
+runTimeModifiable yes;
+
+adjustTimeStep  no;
+
+maxCo           0.1;
+
+// maxDeltaT       1e-04;
+
+// minDeltaT       1e-06;
+
+functions
+{
+//     forces
+// {
+//     type            forceCoeffs;
+//     libs            ("libforces.so");
+//     writeControl    timeStep;
+//     writeInterval   1;
+
+//     patches         (cylinder);
+//     rho             rhoInf;      // Indicates incompressible
+//     log             true;
+//     rhoInf          1.0;         // Redundant for incompressible
+//     liftDir         (0 1 0);
+//     dragDir         (1 0 0);
+//     CofR            (0 0 0);     // Axle midpoint on ground
+//     pitchAxis       (0 0 1);
+//     magUInf         1.0;
+//     lRef            1.0;
+//     Aref            2.0;
+// }
+        MachNumber
+    {
+        type MachNumber;
+        functionObjectLibs ("libutilityFunctionObjects.so");
+        UName           U;
+    }
+    // #include "surfaces"
+
+}
+
+// ************************************************************************* //

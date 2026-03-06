@@ -22,13 +22,13 @@
 \*---------------------------------------------------------------------------*/
 
 #include "SGL2RoeFlux.H"
-// #include "addToRunTimeSelectionTable.H"
+#include "addToRunTimeSelectionTable.H"
 
-// namespace Foam
-// {
-//     defineTypeNameAndDebug(SGL2RoeFlux, 0);
-//     addToRunTimeSelectionTable(dbnsFlux, SGL2RoeFlux, dictionary);
-// }
+namespace Foam
+{
+    defineTypeNameAndDebug(SGL2RoeFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, SGL2RoeFlux, dictionary);
+}
 
 void Foam::SGL2RoeFlux::evaluateFlux
 (
@@ -47,20 +47,18 @@ void Foam::SGL2RoeFlux::evaluateFlux
     const scalar& CvRight,
     const vector& Sf,
     const scalar& magSf,
-    const scalar& meshPhi,
-    const scalar& pInf,
-    const scalar& q
+    const scalar& meshPhi
 ) const
 {
-
-    const scalar gamma =  (RLeft / CvLeft) + 1 ;
-
     // cell face *normal* velocity w_n
     const scalar w_n = meshPhi / (magSf + VSMALL);
 
-    //! Step 1: decode rho left and right:
-    scalar rhoLeft  = (pLeft  +  pInf) / ((gamma - 1.0) * CvLeft * TLeft);
-    scalar rhoRight = (pRight +  pInf) / ((gamma - 1.0) * CvRight * TRight);
+    // //! Step 1: decode rho left and right:
+    // scalar rhoLeft  = (pLeft  +  pInf) / ((gamma - 1.0) * CvLeft * TLeft);
+    // scalar rhoRight = (pRight +  pInf) / ((gamma - 1.0) * CvRight * TRight);
+    // Density
+    const scalar rhoLeft = (pLeft + pinf)/(Cv*(gamma-1)*TLeft);
+    const scalar rhoRight = (pRight + pinf)/(Cv*(gamma-1)*TRight);
 
     //! Decode left and right total energy:
     // total energy per unit mass
@@ -82,10 +80,11 @@ void Foam::SGL2RoeFlux::evaluateFlux
     // const scalar rhoELeft =  ((pLeft + gamma*pInf)/((gamma - 1)))+ rhoLeft*q  +0.5*rhoLeft*magSqr(ULeft);
     // const scalar rhoERight = ((pRight + gamma*pInf)/((gamma - 1)))+ rhoRight*q  +0.5*rhoRight*magSqr(URight);
 
-    const scalar rhoELeft   = rhoLeft*(((pLeft + gamma*pInf)/(pLeft + pInf) )*CvLeft*TLeft + q) + 0.5*rhoLeft*magSqr(ULeft);
-    const scalar rhoERight  = rhoRight*(((pRight + gamma*pInf)/(pRight + pInf) )*CvRight*TRight + q) + 0.5*rhoRight*magSqr(URight);
+    // DensityTotalEnergy
+    const scalar rhoELeft = rhoLeft*Cv*TLeft + pinf + rhoLeft*q + 0.5*rhoLeft*magSqr(ULeft);
+    const scalar rhoERight = rhoRight*Cv*TRight + pinf + rhoRight*q + 0.5*rhoRight*magSqr(URight);
 
-        // Compute left and right total enthalpies:
+    // Compute left and right total enthalpies:
     const scalar HLeft = (rhoELeft + pLeft)/rhoLeft;
     const scalar HRight = (rhoERight + pRight)/rhoRight;
 
@@ -138,19 +137,31 @@ void Foam::SGL2RoeFlux::evaluateFlux
     // L2-Roe scaling: Compute local Mach number based on LEFT and RIGHT states
     // -------------------------
     
-    // speeds of sound (left and right states)
-    const scalar cLeft = Foam::sqrt(max((gamma*(pLeft + pInf))/rhoLeft,SMALL));
-    const scalar cRight = Foam::sqrt(max((gamma*(pRight + pInf))/rhoRight,SMALL));
+    // // speeds of sound (left and right states)
+    // const scalar cLeft = Foam::sqrt(max((gamma*(pLeft + pInf))/rhoLeft,SMALL));
+    // const scalar cRight = Foam::sqrt(max((gamma*(pRight + pInf))/rhoRight,SMALL));
     
-    // Local Mach numbers at left and right states (based on total velocity magnitude)
-    const scalar ML = mag(ULeft) / (cLeft + VSMALL);
-    const scalar MR = mag(URight) / (cRight + VSMALL);
+    // // Local Mach numbers at left and right states (based on total velocity magnitude)
+    // const scalar ML = mag(ULeft) / (cLeft + VSMALL);
+    // const scalar MR = mag(URight) / (cRight + VSMALL);
     
-    // Scaling factor: min(1, max(ML, MR)) as per Equation (6) in the paper
-    const scalar Ma_local = max(ML, MR); //!  increase
+    // // Scaling factor: min(1, max(ML, MR)) as per Equation (6) in the paper
+    // const scalar Ma_local = max(ML, MR); //!  increase
 
-    // Info << "Ma_local= "<<Ma_local<<endl;
-    const scalar zeta = min(1.0, Ma_local) ;
+    // // Info << "Ma_local= "<<Ma_local<<endl;
+    // const scalar zeta = min(1.0, Ma_local) ;
+
+        const vector UTilde_normal = contrVTilde * normalVector;
+    const vector UTilde_tangent = UTilde - UTilde_normal;
+    const scalar VTildeMag = mag(UTilde_tangent);
+    
+    // Local Mach number as per Rieper (2011), Eq. (3.16):
+    // Ma_local = (|U_n| + |V_t|) / a
+    const scalar Ma_local = (mag(UTilde_normal) + mag(UTilde_tangent)) / (cTilde + VSMALL);
+    
+    // Scaling factor: min(Ma_local, 1)
+    const scalar zeta = min(1.0, Ma_local);
+
     // -------------------------
     // Shock switch (Portela style with modifications)
     // -------------------------
@@ -158,12 +169,13 @@ void Foam::SGL2RoeFlux::evaluateFlux
 
     // Simplified shock switch: active if significant pressure jump exists
     // Can be made more sophisticated based on pressure gradient
-    // const scalar deltaP_threshold = 0.01*min(pLeft, pRight);
-    // const bool shockPresent = (mag(deltaP) > deltaP_threshold);
+    const scalar deltaP_threshold = 0.01*min(pLeft, pRight);
+    const bool shockPresent = (mag(deltaP) > deltaP_threshold);
     
     // // Apply scaling only away from shocks (ssw = 0)
     // const scalar zeta_eff = shockPresent ? 1.0 : zeta;
     const scalar zeta_eff = zeta;
+    // const scalar zeta_eff = 1;
 
     // -------------------------
     // Scaled velocity jumps for L2-Roe
@@ -228,6 +240,13 @@ void Foam::SGL2RoeFlux::evaluateFlux
     // Compute shock indicator
     const scalar UL = contrVLeft;
     const scalar UR = contrVRight;
+    
+    // speeds of sound (left and right states)
+    const scalar cLeft = sqrt(max((kappaLeft - 1)*(HLeft - 0.5*magSqr(ULeft)), SMALL));
+    const scalar cRight = sqrt(max((kappaRight - 1)*(HRight - 0.5*magSqr(URight)), SMALL));
+
+
+
 
     scalar eps1 = 2.0*max(0.0, (UR - cRight) - (UL - cLeft));
     scalar eps2 = 2.0*max(0.0, UR - UL);

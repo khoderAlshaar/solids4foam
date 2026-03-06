@@ -1,0 +1,92 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     4.1                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    rho 
+    {
+      solver          diagonal;
+      print           false;
+    }
+
+  rhoU 
+    {
+      solver          diagonal;
+      print           false;
+    }
+
+  rhoE 
+    {
+      solver          diagonal;
+      print           false;
+    }
+
+    p
+    {
+    }
+
+    U
+    {
+    }
+
+    T
+    {
+    }
+    
+    cellMotionU
+    {
+        solver          GAMG;
+        tolerance       1e-06;
+        relTol          0.001;
+        minIter         1;
+        maxIter         100;
+        smoother        GaussSeidel;
+        nPreSweeps      0;
+        nPostSweeps     2;
+        nFinestSweeps   2;
+        scaleCorrection true;
+        directSolveCoarsest false;
+        cacheAgglomeration true;
+        nCellsInCoarsestLevel 20;
+        agglomerator    faceAreaPair;
+        mergeLevels     1;
+    }
+
+}
+
+multiStage
+{
+    solverType MSMS;
+    numberSubCycles 10000;
+    tolerance 1e-4;
+    relTol 1e-9;
+    infoFrequency      100;
+    pseudoStagnationTol 1e-30;
+    pseudoStagnationLimit 1;
+}
+
+fieldBounds
+{
+    // With bounding
+    p      1e-6     1e6;
+    rho    1e-6     1e6;
+    h      1e-6     1e6;
+    e      1e-6     1e6;
+    rhoE   1e-6     1e6;
+    T      1e-6    3000;
+    U    1000;
+}
+// ************************************************************************* //

@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "1.571934130073674/uniform/functionObjects";
+    object      functionObjectProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+results
+{
+    forcesCompressible
+    {
+        vector
+        {
+            normalForce     ( 7.64917 -0.000359016 -8.89582e-16 );
+            tangentialForce ( 0 0 0 );
+            porousForce     ( 0 0 0 );
+            normalMoment    ( 1.79508e-05 0.382459 -0.000109755 );
+            tangentialMoment ( 0 0 0 );
+            porousMoment    ( 0 0 0 );
+        }
+    }
+    forceCoeffsCompressible
+    {
+        scalar
+        {
+            Cd              0.002805408974383827;
+            Cs              3.262630232582589e-19;
+            Cl              -1.316726432070958e-07;
+            CmRoll          6.583632210780606e-09;
+            CmPitch         4.025372249680848e-08;
+            CmYaw           0.0001402704487191872;
+            Cd(f)           0.001402711070824124;
+            Cd(r)           0.001402697903559703;
+            Cs(f)           0.0001402704487191874;
+            Cs(r)           -0.0001402704487191871;
+            Cl(f)           -2.55825991067394e-08;
+            Cl(r)           -1.060900441003564e-07;
+        }
+    }
+}
+
+surfaces
+{
+    Ma
+    {
+        file            "<case>/postProcessing/surfaces/1.571934130073674/Ma_airfoil.raw";
+    }
+    p
+    {
+        file            "<case>/postProcessing/surfaces/1.571934130073674/p_airfoil.raw";
+    }
+}
+
+
+// ************************************************************************* //

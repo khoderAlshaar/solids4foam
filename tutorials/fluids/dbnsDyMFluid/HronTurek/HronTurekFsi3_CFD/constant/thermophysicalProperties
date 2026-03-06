@@ -1,0 +1,41 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     4.1                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+thermoType     externalStiffenedGasThermo ;//externalStiffenedGasThermo;
+
+// stiffenedGasCoeffs
+// {
+//     gamma  1.01;
+//     pInf 12052247.524752485;
+//     Cv 4147.524752475248;
+//     q  -1143365.0;
+//     mu 0;
+//     Pr 7;
+// }; 
+
+stiffenedGasCoeffs // at T= 288.15, rho =1000
+{
+    gamma  2.782917482129208;
+    pInf 773221168.8164893;
+    Cv 1505.254836659763;
+    q  -1143982.3499999999;
+    mu 1;
+    Pr 7;
+    pRef 1e5;
+};
+
+
+
+// ************************************************************************* //

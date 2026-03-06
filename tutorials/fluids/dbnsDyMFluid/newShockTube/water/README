@@ -1,0 +1,2 @@
+- The second Order with Low-Mach correction (hllcSGLMFlux) scheme requires a pressure sensore in presense of shocks.
+- linearUpwind limiter does not work for these cases. 

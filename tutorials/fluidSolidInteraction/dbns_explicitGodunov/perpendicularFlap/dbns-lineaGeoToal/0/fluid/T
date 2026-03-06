@@ -1,0 +1,61 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  11
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      T;
+}
+// ************************************************************************* //
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 348.189;
+
+boundaryField
+{
+    inlet
+    {
+        type           fixedValue;
+        value          $internalField;
+        // type            mytotalTemperature;
+        // psi             psi;
+        // gamma           1.4;
+        // T0              uniform   348.189912  ;
+        // value           $internalField;
+
+    }
+    outlet
+    {
+        type            zeroGradient;
+        // type            inletOutlet;
+        // value           $internalField;
+        // inletValue      $internalField;
+
+    }
+    flap
+    {
+        type            zeroGradient;   // Euler/inviscid wall, use fixedValue for isothermal
+    }
+    upperWall
+    {
+        type            zeroGradient;   // Euler/inviscid wall, use fixedValue for isothermal
+    }
+    lowerWall
+    {
+        type            zeroGradient;   // Euler/inviscid wall, use fixedValue for isothermal
+    }
+    frontAndBack
+    {
+        type            empty;
+    }
+
+}
+
+// ************************************************************************* //

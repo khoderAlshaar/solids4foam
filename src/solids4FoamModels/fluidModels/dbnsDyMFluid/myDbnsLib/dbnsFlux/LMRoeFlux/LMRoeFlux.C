@@ -129,16 +129,16 @@ void Foam::LMRoeFlux::evaluateFlux
     // -------------------------
     
     // Compute shock indicator
-    const scalar UL = contrVLeft;
-    const scalar UR = contrVRight;
+    // const scalar UL = contrVLeft;
+    // const scalar UR = contrVRight;
 
-    scalar eps1 = 2.0*max(0.0, (UR - cRight) - (UL - cLeft));
-    scalar eps2 = 2.0*max(0.0, UR - UL);
-    scalar eps3 = 2.0*max(0.0, (UR + cRight) - (UL + cLeft));
+    // scalar eps1 = 2.0*max(0.0, (UR - cRight) - (UL - cLeft));
+    // scalar eps2 = 2.0*max(0.0, UR - UL);
+    // scalar eps3 = 2.0*max(0.0, (UR + cRight) - (UL + cLeft));
 
     // Simplified shock switch: active if significant pressure jump exists
-    const scalar deltaP_threshold = 0.01*min(pLeft, pRight);
-    const bool shockPresent = (mag(deltaP) > deltaP_threshold);
+    // const scalar deltaP_threshold = 0.01*min(pLeft, pRight);
+    // const bool shockPresent = (mag(deltaP) > deltaP_threshold);
     
     // Apply scaling only away from shocks (ssw = 0)
     // const scalar zeta_eff = shockPresent ? 1.0 : zeta;
@@ -154,7 +154,7 @@ void Foam::LMRoeFlux::evaluateFlux
     
     // Tangential velocity components - UNSCALED for LMRoe
     const vector deltaU_nVec = deltaContrV * normalVector;
-    const vector deltaU_t = deltaU - deltaU_nVec;  // Not scaled!
+    const vector deltaU_t = deltaU - deltaU_nVec;  //! Not scaled!
 
     // -------------------------
     // Wave strengths using scaled normal jump only
@@ -201,20 +201,20 @@ void Foam::LMRoeFlux::evaluateFlux
     // Unchanged from standard Roe / L2Roe
     // -------------------------
     
-    if (lambda1 < eps1 && eps1 > VSMALL)
-    {
-        lambda1 = (sqr(lambda1) + sqr(eps1))/(2.0*eps1);
-    }
+    // if (lambda1 < eps1 && eps1 > VSMALL)
+    // {
+    //     lambda1 = (sqr(lambda1) + sqr(eps1))/(2.0*eps1);
+    // }
 
-    if (lambda2 < eps2 && eps2 > VSMALL)
-    {
-        lambda2 = (sqr(lambda2) + sqr(eps2))/(2.0*eps2);
-    }
+    // if (lambda2 < eps2 && eps2 > VSMALL)
+    // {
+    //     lambda2 = (sqr(lambda2) + sqr(eps2))/(2.0*eps2);
+    // }
 
-    if (lambda3 < eps3 && eps3 > VSMALL)
-    {
-        lambda3 = (sqr(lambda3) + sqr(eps3))/(2.0*eps3);
-    }
+    // if (lambda3 < eps3 && eps3 > VSMALL)
+    // {
+    //     lambda3 = (sqr(lambda3) + sqr(eps3))/(2.0*eps3);
+    // }
 
     // -------------------------
     // Flux difference components
@@ -236,27 +236,40 @@ void Foam::LMRoeFlux::evaluateFlux
     // Physical fluxes (unchanged from standard Roe)
     // -------------------------
     
-    const scalar fluxLeft11 = rhoLeft*contrVLeft;
-    const vector fluxLeft124 = ULeft*fluxLeft11 + normalVector*pLeft;
+    // const scalar fluxLeft11 = rhoLeft*contrVLeft;
+    // const vector fluxLeft124 = ULeft*fluxLeft11 + normalVector*pLeft;
+    // const scalar fluxLeft15 = hLeft*fluxLeft11;
+
+    // const scalar fluxRight11 = rhoRight*contrVRight;
+    // const vector fluxRight124 = URight*fluxRight11 + normalVector*pRight;
+    // const scalar fluxRight15 = hRight*fluxRight11;
+
+    const scalar c2 = 0.04;
+    const scalar dUCorr = -(c2 /( 1000 * 200 + VSMALL)) *deltaP ; 
+    const scalar contrVCorr = 0.5* (contrVLeft + contrVRight ) ;// + dUCorr;
+
+
+    const scalar fluxLeft11 = rhoLeft;
+    const vector fluxLeft124 = ULeft*fluxLeft11;
     const scalar fluxLeft15 = hLeft*fluxLeft11;
 
-    const scalar fluxRight11 = rhoRight*contrVRight;
-    const vector fluxRight124 = URight*fluxRight11 + normalVector*pRight;
+    const scalar fluxRight11 = rhoRight;
+    const vector fluxRight124 = URight*fluxRight11 ;
     const scalar fluxRight15 = hRight*fluxRight11;
 
     // -------------------------
     // Face flux assembly (Roe flux with ALE correction)
     // -------------------------
     
-    const scalar flux1 = 0.5*(fluxLeft11 + fluxRight11 
+    const scalar flux1 = 0.5*((fluxLeft11 + fluxRight11 )* contrVCorr
                               - (rhoLeft + rhoRight)*w_n 
                               - (diffF11 + diffF21 + diffF31));
 
-    const vector flux24 = 0.5*(fluxLeft124 + fluxRight124 
+    const vector flux24 = 0.5*((fluxLeft124 + fluxRight124)*contrVCorr + normalVector*pLeft + normalVector*pRight
                                - (rhoLeft*ULeft + rhoRight*URight)*w_n 
                                - (diffF124 + diffF224 + diffF324));
 
-    const scalar flux5 = 0.5*(fluxLeft15 + fluxRight15 
+    const scalar flux5 = 0.5*((fluxLeft15 + fluxRight15 ) * contrVCorr
                               - (rhoLeft*eLeft + rhoRight*eRight)*w_n 
                               - (diffF15 + diffF25 + diffF35));
 

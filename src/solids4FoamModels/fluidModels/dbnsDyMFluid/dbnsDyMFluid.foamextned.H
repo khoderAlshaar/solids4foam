@@ -87,6 +87,8 @@ class dbnsDyMFluid
 
         const dimensionedScalar pInf;
         const dimensionedScalar q;
+        const dimensionedScalar pRef;
+        // const dimensionedScalar gamma;
                 // //- Fluid density
         volScalarField rho_;
         // volVectorField U_;
@@ -102,6 +104,9 @@ class dbnsDyMFluid
         // autoPtr<numericFlux> dbnsFluxPtr_;
     
         // numericFlux& dbnsFlux_;
+
+        // word thermoTypeName;
+
 
 
 

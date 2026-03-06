@@ -90,6 +90,18 @@ dbnsDyMFluid::dbnsDyMFluid
          dimEnergy/dimMass,
         thermoDict.subDict("stiffenedGasCoeffs").lookupOrDefault<scalar>("q", 0.0)
     ),
+    pRef
+    (
+        "pRef",
+         dimPressure,
+        thermoDict.subDict("stiffenedGasCoeffs").lookupOrDefault<scalar>("pRef", 0.0)
+    ),
+    // gamma
+    // (
+    //     "gamma",
+    //     dimless,
+    //     thermoDict.subDict("stiffenedGasCoeffs").lookupOrDefault<scalar>("gamma",0.0)
+    // ),
     
     rho_
     (
@@ -309,6 +321,10 @@ dbnsDyMFluid::dbnsDyMFluid
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+void dbnsDyMFluid::setDeltaT(Time& runTime)
+{
+
+}
 
 
 
@@ -334,6 +350,8 @@ tmp<vectorField> dbnsDyMFluid::patchViscousForce(const label patchID) const
 
 tmp<scalarField> dbnsDyMFluid::patchPressureForce(const label patchID) const
 {
+
+    // scalar pRef =1e5;
     tmp<scalarField> tpF
     (
         new scalarField(mesh().boundary()[patchID].size(), 0)
@@ -344,7 +362,7 @@ tmp<scalarField> dbnsDyMFluid::patchPressureForce(const label patchID) const
 #else
     tpF() =
 #endif
-        p().boundaryField()[patchID];
+        p().boundaryField()[patchID]- pRef.value();
 
     return tpF;
 }
@@ -371,11 +389,6 @@ bool dbnsDyMFluid::evolve()
     dimensionedScalar& pseudoTimeStep = pseudoTimeStep_;
     volScalarField& CoDeltaT = CoDeltaT_;
 
-
-
-    // label& numberSubCycles = numberSubCycles_;
-    // scalar& tolerance = tolerance_;
-    // scalar& relTol = relTol_;
 
     const Switch& adjustTimeStep = adjustTimeStep_;
 
@@ -423,17 +436,39 @@ bool dbnsDyMFluid::evolve()
         mesh.update();
     }
 
-    // #include "mySolve.H"
-    // #include "mySolveRK2New.H"
-    #include "mySolveRK2.H"
+ // Pseudo-time RK2 inner loop (updates rho, rhoU, rhoE, phi, etc.)
+        if(conv.solverType() == "MSMS" ) // Multi-Stage-Multi-Step
+        {
+            #include "mySolveRK2.H"
+        }
+        else if (conv.solverType() == "MSSS" ) // Multi-Stage-Single-Step
+        {
+            Info << "solver Type: MSSS -  Multi-Stage-Single-Step"<<endl;
+            #include "mySolveMSSS.H"
+        }
+        // else if (conv.solverType() == "SSSS" ) // Single-Stage-Single-Step
+        // {
+        //     Info << "solver Type: SSSS -  Single-Stage-Single-Step"<<endl;
+        //     #include "mySolveSSSS.H"
+        // }
+        // else if (conv.solverType() == "MSMS-D" ) // Single-Stage-Single-Step
+        // {
+        //     #include "solveFluid.H"
+        // }
+        else
+        {
+            Info << "please set the solver Type"<<endl;
+            // break;
+        }
 
-         // After inner loop, check global/physical convergence using oldTime() fields
+    //! After inner loop, check global/physical convergence using oldTime() fields
     if (conv.physicalConverged(rho, rhoU, rhoE))
     {
         runTime.write();
         // break;
     }
-
+    
+    
     return 0;
 }
 

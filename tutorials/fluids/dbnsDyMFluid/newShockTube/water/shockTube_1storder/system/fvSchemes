@@ -1,0 +1,95 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     5.0                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  | For copyright notice see file Copyright         |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// dbnsFlux SGL2RoeFlux;
+// dbnsFlux hllcLMSGFlux;
+// dbnsFlux SGL2RoeFlux;
+dbnsFlux hllcSGLMFlux;
+// dbnsFlux RotatedSGL2RoeFlux;
+// dbnsFlux SGThornberRoeFlux;
+// dbnsFlux SGRoeFlux;
+
+ddtSchemes
+{
+    
+    default Euler;
+    // default backward;
+    // ddt(rho)       myBackwardDual physDeltaT CoDeltaT;
+    // ddt(rhoU)      myBackwardDual physDeltaT CoDeltaT;
+    // ddt(rhoE)      myBackwardDual physDeltaT CoDeltaT;
+
+    // ddt(rho)       backwardDual physDeltaT CoDeltaT;
+    // ddt(rhoU)      backwardDual physDeltaT CoDeltaT;
+    // ddt(rhoE)      backwardDual physDeltaT CoDeltaT;
+}
+
+gradSchemes
+{
+
+    // default         leastSquares;
+    default         Gauss linear;
+
+    limitedGauss    cellLimited Gauss linear 1;
+    limitedLSQR     cellLimited leastSquares 1;
+
+    leastSquares leastSquares;
+
+}
+interpolationSchemes
+{
+    default linear;
+    // reconstruct(p)  vanLeer 1 ; 
+    // reconstruct(U)  vanLeer 1 ;
+    // reconstruct(T)  vanLeer 1 ;
+    // reconstruct(p)  vanAlbada 1 ; 
+    // reconstruct(U)  vanAlbada 1 ;
+    // reconstruct(T)  vanAlbada 1 ;
+    // reconstruct(p)  limitedLinear 1 ; 
+    // reconstruct(U)  limitedLinearV 1 ;
+    // reconstruct(T)  limitedLinear 1 ;
+
+    reconstruct(p)  upwind; 
+    reconstruct(U)  upwind;
+    reconstruct(T)  upwind;
+    // interpolate(grad(h)) linear;
+
+}
+
+divSchemes
+{
+    // default none;
+    // dbns
+    // {
+    //     flux    SGL2Roe;
+    //     limiter Venkatakrishnan; //BarthJespersen Venkatakrishnan firstOrder VanLeer VanAlbada Minmod Superbee
+    // }
+
+    div(devRhoReff) Gauss linear corrected;
+    div((devRhoReff&U)) Gauss linear corrected;
+}
+
+
+laplacianSchemes
+{
+   default         Gauss linear corrected;
+}
+
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+// ************************************************************************* //

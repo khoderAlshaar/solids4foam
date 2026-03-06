@@ -25,10 +25,11 @@ License
 
 #include "makeBasicNumericFlux.H"
 
-
-#include "roeALEFlux.H"
-#include "SGL2RoeFlux.H"
-// #include "roeALELowMaFlux.H"
+#include "rusanovFlux.H"
+#include "roeFlux.H"
+#include "betaFlux.H"
+#include "hllcFlux.H"
+#include "hllcALEFlux.H"
 
 #include "firstOrderLimiter.H"
 #include "BarthJespersenLimiter.H"
@@ -46,9 +47,10 @@ makeBasicNumericFlux(Flux, firstOrderLimiter);                                \
 makeBasicNumericFlux(Flux, BarthJespersenLimiter);                            \
 makeBasicNumericFlux(Flux, VenkatakrishnanLimiter);
 
-// makeBasicNumericFluxForAllLimiters(roeFlux);
-makeBasicNumericFluxForAllLimiters(roeALEFlux);
-makeBasicNumericFluxForAllLimiters(SGL2RoeFlux);
+makeBasicNumericFluxForAllLimiters(rusanovFlux);
+makeBasicNumericFluxForAllLimiters(betaFlux);
+makeBasicNumericFluxForAllLimiters(roeFlux);
+makeBasicNumericFluxForAllLimiters(hllcFlux);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

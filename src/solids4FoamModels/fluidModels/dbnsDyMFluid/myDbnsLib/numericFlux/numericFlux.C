@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
-  \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     4.1
-    \\  /    A nd           | Web:         http://www.foam-extend.org
-     \\/     M anipulation  | For copyright notice see file Copyright
+  \\      /  F ield         | OpenFOAM: Open Source CFD
+   \\    /   O peration     | 
+    \\  /    A nd           | For copyright notice see file Copyright
+     \\/     M anipulation  | 
 -------------------------------------------------------------------------------
 License
-    This file is part of foam-extend.
+    This file isn't part of foam-extend nor OpenFOAM.
 
     foam-extend is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by the
@@ -22,17 +22,15 @@ License
     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
 
 \*---------------------------------------------------------------------------*/
-  
-#include "numericFlux.H"
-#include "MDLimiter.H"
-#include "tmp.H" 
 
+#include "fvCFD.H"
+#include "numericFlux.H"
+// #include "directionInterpolate.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 // Construct from components
-template<class Flux, class Limiter>
-Foam::numericFlux<Flux, Limiter>::numericFlux
+Foam::numericFlux::numericFlux
 (
     const volScalarField& p,
     const volVectorField& U,
@@ -40,7 +38,11 @@ Foam::numericFlux<Flux, Limiter>::numericFlux
     basicThermo& thermo
 )
 :
-    numericFluxBase<Flux>(p.mesh()),
+    pFlux_( Foam::dbnsFlux::New( 
+        p.mesh(), 
+        p.mesh().thisDb().lookupObject<IOdictionary>("fvSchemes")) 
+    ),
+    mesh_(p.mesh()),
     p_(p),
     U_(U),
     T_(T),
@@ -50,20 +52,20 @@ Foam::numericFlux<Flux, Limiter>::numericFlux
         IOobject
         (
             "phi",
-            this->mesh().time().timeName(),
-            this->mesh(),
+            mesh_.time().timeName(),
+            mesh_,
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        (linearInterpolate(thermo_.rho()*U_) & this->mesh().Sf())
+        (linearInterpolate(thermo_.rho()*U_) & mesh_.Sf())
     ),
     rhoUFlux_
     (
-        IOobject 
+        IOobject
         (
             "rhoUFlux",
-            this->mesh().time().timeName(),
-            this->mesh(),
+            mesh_.time().timeName(),
+            mesh_,
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
@@ -74,119 +76,46 @@ Foam::numericFlux<Flux, Limiter>::numericFlux
         IOobject
         (
             "rhoEFlux",
-            this->mesh().time().timeName(),
-            this->mesh(),
+            mesh_.time().timeName(),
+            mesh_,
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
         rhoFlux_*linearInterpolate(thermo.Cv()*T_ + 0.5*magSqr(U_))
-    ),
-    
-    // meshPhi_
-    // (
-    //     IOobject
-    //     (
-    //         "meshPhi",
-    //         this->mesh().time().timeName(),
-    //         this->mesh(),
-    //         IOobject::NO_READ,
-    //         IOobject::NO_WRITE
-    //     ),
-    //     this->mesh(),
-    //     dimensionedScalar("0", dimVolume/dimTime, 0.0)
-    // )//, 
-        
-     thermoDict
-        (
-            IOobject
-            (
-                "thermophysicalProperties",
-                 this->mesh().time().constant(),
-                 this->mesh(),
-                IOobject::MUST_READ_IF_MODIFIED,
-                IOobject::NO_WRITE
-            )
-            
-        )
-{
-                word thermoTypeName;
-
-            thermoDict.lookup("thermoType") >> thermoTypeName;
-            if (thermoTypeName == "externalStiffenedGasThermo")
-            {
-                const dictionary& d = thermoDict.subDict("stiffenedGasCoeffs");
-                d.lookup("pInf") >> pInf;
-                d.lookup("q") >> q;
-            }
-            else
-            {
-                 pInf =0 ;
-                q = 0;
-            }
-}
+    ) 
+{}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-template<class Flux, class Limiter>
-void Foam::numericFlux<Flux, Limiter>::computeFlux()
+void Foam::numericFlux::computeFlux()
 {
-        // Info << "meshPhi_: " << meshPhi_ <<endl;
-
     // Get face-to-cell addressing: face area point from owner to neighbour
-    const unallocLabelList& owner = this->mesh().owner();
-    const unallocLabelList& neighbour = this->mesh().neighbour();
+    const auto& owner = mesh_.owner();
+    const auto& neighbour = mesh_.neighbour();
 
     // Get the face area vector
-    const surfaceVectorField& Sf = this->mesh().Sf();
-    const surfaceScalarField& magSf = this->mesh().magSf();
+    const surfaceVectorField& Sf = mesh_.Sf();
+    const surfaceScalarField& magSf = mesh_.magSf();
+    
+    // ALE mesh velocity 
+    surfaceScalarField mshPhi( meshPhi() ); 
 
-    const volVectorField& cellCentre = this->mesh().C();
-    const surfaceVectorField& faceCentre = this->mesh().Cf();
-
-    // ALE mesh velocity + velocity due to MRF
-    surfaceScalarField mshPhi( meshPhi() );
     // Thermodynamics
     const volScalarField Cv = thermo_.Cv();
-    const volScalarField Cp = thermo_.Cp();
-    const volScalarField R  = thermo_.Cp() - Cv;
+    const volScalarField R  = thermo_.Cp() - Cv; //! need to be consistant with SGEOS
 
-    // Get gradients
-    // Coupled patch update on gradients moved into gradScheme.C
-    // HJ, 22/Apr/2016;
+    surfaceScalarField pos_(IOobject("pos", mesh_), mesh_, dimensionedScalar("one", dimless, 1.0));
+    surfaceScalarField neg_(IOobject("neg", mesh_), mesh_, dimensionedScalar("minusOne", dimless, -1.0));
 
-    // Changed return type for gradient cacheing.  HJ, 22/Apr/2016
-    const tmp<volVectorField> tgradP = fvc::grad(p_);
-    const volVectorField& gradP = tgradP();
+    surfaceScalarField p_pos( fvc::interpolate(p_, pos_,"reconstruct(p)") );
+    surfaceScalarField p_neg( fvc::interpolate(p_, neg_,"reconstruct(p)") );
 
-    const tmp<volTensorField> tgradU = fvc::grad(U_);
-    const volTensorField& gradU = tgradU();
+    surfaceVectorField U_pos( fvc::interpolate(U_, pos_,"reconstruct(U)") );
+    surfaceVectorField U_neg( fvc::interpolate(U_, neg_,"reconstruct(U)") );
 
-    const tmp<volVectorField> tgradT = fvc::grad(T_);
-    const volVectorField& gradT = tgradT();
-
-    MDLimiter<scalar, Limiter> scalarPLimiter
-    (
-        this->p_,
-        gradP
-    );
-
-    MDLimiter<vector, Limiter> vectorULimiter
-    (
-        this->U_,
-        gradU
-    );
-
-    MDLimiter<scalar, Limiter> scalarTLimiter
-    (
-        this->T_,
-        gradT
-    );
-
-    // Get limiters
-    const volScalarField& pLimiter = scalarPLimiter.phiLimiter();
-    const volVectorField& ULimiter = vectorULimiter.phiLimiter();
-    const volScalarField& TLimiter = scalarTLimiter.phiLimiter();
+    surfaceScalarField T_pos( fvc::interpolate(T_, pos_,"reconstruct(T)") );
+    surfaceScalarField T_neg( fvc::interpolate(T_, neg_,"reconstruct(T)") );
 
     // Calculate fluxes at internal faces
     forAll (owner, faceI)
@@ -194,30 +123,20 @@ void Foam::numericFlux<Flux, Limiter>::computeFlux()
         const label own = owner[faceI];
         const label nei = neighbour[faceI];
 
-        const vector deltaRLeft = faceCentre[faceI] - cellCentre[own];
-        const vector deltaRRight = faceCentre[faceI] - cellCentre[nei];
-
         // calculate fluxes with reconstructed primitive variables at faces
-        Flux::evaluateFlux
+	pFlux_ -> evaluateFlux
         (
             rhoFlux_[faceI],
             rhoUFlux_[faceI],
             rhoEFlux_[faceI],
-            p_[own] + pLimiter[own]*(deltaRLeft & gradP[own]),
-            p_[nei] + pLimiter[nei]*(deltaRRight & gradP[nei]),
-            U_[own] + cmptMultiply(ULimiter[own], (deltaRLeft & gradU[own])),
-            U_[nei] + cmptMultiply(ULimiter[nei], (deltaRRight & gradU[nei])),
-            T_[own] + TLimiter[own]*(deltaRLeft & gradT[own]),
-            T_[nei] + TLimiter[nei]*(deltaRRight & gradT[nei]),
-            R[own],
-            R[nei],
-            Cv[own],
-            Cv[nei],
+            p_pos[faceI],  p_neg[faceI],
+            U_pos[faceI],  U_neg[faceI],
+            T_pos[faceI],  T_neg[faceI],
+            R[own],        R[nei],
+            Cv[own],       Cv[nei],
             Sf[faceI],
             magSf[faceI],
-            mshPhi[faceI],
-            pInf,
-            q
+	    mshPhi[faceI]
         );
     }
 
@@ -231,166 +150,77 @@ void Foam::numericFlux<Flux, Limiter>::computeFlux()
         fvsPatchVectorField& pRhoUFlux = rhoUFlux_.boundaryField()[patchi];
         fvsPatchScalarField& pRhoEFlux = rhoEFlux_.boundaryField()[patchi];
 
-        // Patch fields
-        const fvPatchScalarField& pp = p_.boundaryField()[patchi];
-        const vectorField& pU = U_.boundaryField()[patchi];
-        const scalarField& pT = T_.boundaryField()[patchi];
-
         const scalarField& pCv = Cv.boundaryField()[patchi];
-        const scalarField& pR = R.boundaryField()[patchi];
-
-        // Gradients
-        const fvPatchVectorField& pGradP = gradP.boundaryField()[patchi];
-        const fvPatchTensorField& pGradU = gradU.boundaryField()[patchi];
-        const fvPatchVectorField& pGradT = gradT.boundaryField()[patchi];
-
-        // Limiters
-        const fvPatchScalarField& pPatchLim = pLimiter.boundaryField()[patchi];
-        const fvPatchVectorField& UPatchLim = ULimiter.boundaryField()[patchi];
-        const fvPatchScalarField& TPatchLim = TLimiter.boundaryField()[patchi];
+        const scalarField& pR  = R.boundaryField()[patchi];
 
         // Face areas
         const fvsPatchVectorField& pSf = Sf.boundaryField()[patchi];
         const fvsPatchScalarField& pMagSf = magSf.boundaryField()[patchi];
-        const fvsPatchScalarField& pMeshPhi = mshPhi.boundaryField()[patchi];
+        const fvsPatchScalarField& pMshPhi = mshPhi.boundaryField()[patchi];
 
-        if (pp.coupled())
+        if (curPatch.coupled())
         {
-            // Coupled patch
-            const scalarField ppLeft  =
-                p_.boundaryField()[patchi].patchInternalField();
-
-            const scalarField ppRight =
-                p_.boundaryField()[patchi].patchNeighbourField();
-
-            const vectorField pULeft  =
-                U_.boundaryField()[patchi].patchInternalField();
-
-            const vectorField pURight =
-                U_.boundaryField()[patchi].patchNeighbourField();
-
-            const scalarField pTLeft  =
-                T_.boundaryField()[patchi].patchInternalField();
-
-            const scalarField pTRight =
-                T_.boundaryField()[patchi].patchNeighbourField();
-
-            // Gradients
-            const vectorField pgradPLeft = pGradP.patchInternalField();
-            const vectorField pgradPRight = pGradP.patchNeighbourField();
-
-            const tensorField pgradULeft = pGradU.patchInternalField();
-            const tensorField pgradURight = pGradU.patchNeighbourField();
-
-            const vectorField pgradTLeft = pGradT.patchInternalField();
-            const vectorField pgradTRight = pGradT.patchNeighbourField();
-
-            // Geometry: call the raw cell-to-face vector by calling
-            // the base patch (cell-to-face) delta coefficient
-            // Work out the right delta from the cell-to-cell delta
-            // across the coupled patch and left delta
-            vectorField pDeltaRLeft = curPatch.fvPatch::delta();
-            vectorField pDdeltaRRight = pDeltaRLeft - curPatch.delta();
-
-            // Limiters
-
-            const scalarField ppLimiterLeft = pPatchLim.patchInternalField();
-            const scalarField ppLimiterRight = pPatchLim.patchNeighbourField();
-
-            const vectorField pULimiterLeft = UPatchLim.patchInternalField();
-            const vectorField pULimiterRight = UPatchLim.patchNeighbourField();
-
-            const scalarField pTLimiterLeft = TPatchLim.patchInternalField();
-            const scalarField pTLimiterRight = TPatchLim.patchNeighbourField();
-
-            forAll (pp, facei)
+            // Patch fields
+            const fvsPatchScalarField& pp_pos = p_pos.boundaryField()[patchi];
+            const fvsPatchVectorField& pU_pos = U_pos.boundaryField()[patchi];
+            const fvsPatchScalarField& pT_pos = T_pos.boundaryField()[patchi];
+            
+            const fvsPatchScalarField& pp_neg = p_neg.boundaryField()[patchi];
+            const fvsPatchVectorField& pU_neg = U_neg.boundaryField()[patchi];
+            const fvsPatchScalarField& pT_neg = T_neg.boundaryField()[patchi];
+            
+            forAll (curPatch, facei)
             {
-                Flux::evaluateFlux
+                pFlux_ -> evaluateFlux
                 (
                     pRhoFlux[facei],
                     pRhoUFlux[facei],
                     pRhoEFlux[facei],
 
-                    ppLeft[facei]
-                  + ppLimiterLeft[facei]*
-                    (pDeltaRLeft[facei] & pgradPLeft[facei]),
+                    pp_pos[facei],  pp_neg[facei],
+                    pU_pos[facei],  pU_neg[facei],
+                    pT_pos[facei],  pT_neg[facei],
 
-                    ppRight[facei]
-                  + ppLimiterRight[facei]*
-                    (pDdeltaRRight[facei] & pgradPRight[facei]),
-
-                    pULeft[facei]
-                  + cmptMultiply
-                    (
-                        pULimiterLeft[facei],
-                        pDeltaRLeft[facei] & pgradULeft[facei]
-                    ),
-
-                    pURight[facei]
-                  + cmptMultiply
-                    (
-                        pULimiterRight[facei],
-                        pDdeltaRRight[facei] & pgradURight[facei]
-                    ),
-
-                    pTLeft[facei]
-                  + pTLimiterLeft[facei]*
-                    (pDeltaRLeft[facei] & pgradTLeft[facei]),
-
-                    pTRight[facei]
-                  + pTLimiterRight[facei]*
-                    (pDdeltaRRight[facei] & pgradTRight[facei]),
-
-                    pR[facei],
-                    pR[facei],
-                    pCv[facei],
-                    pCv[facei],
+                    pR[facei],  pR[facei],
+                    pCv[facei], pCv[facei],
                     pSf[facei],
                     pMagSf[facei],
-                    pMeshPhi[facei],
-                    pInf,
-                    q
+                    pMshPhi[facei]
                 );
             }
         }
         else
         {
+            const fvPatchScalarField& pp = p_.boundaryField()[patchi];
+            const vectorField& pU = U_.boundaryField()[patchi];
+            const scalarField& pT = T_.boundaryField()[patchi];
+
             forAll (pp, facei)
             {
                 // Calculate fluxes
-                Flux::evaluateFlux
+                pFlux_ -> evaluateFlux
                 (
                     pRhoFlux[facei],
                     pRhoUFlux[facei],
                     pRhoEFlux[facei],
-                    pp[facei],
-                    pp[facei],
-                    pU[facei],
-                    pU[facei],
-                    pT[facei],
-                    pT[facei],
-                    pR[facei],
-                    pR[facei],
-                    pCv[facei],
-                    pCv[facei],
+                    pp[facei],  pp[facei],
+                    pU[facei],  pU[facei],
+                    pT[facei],  pT[facei],
+                    pR[facei],  pR[facei],
+                    pCv[facei], pCv[facei],
                     pSf[facei],
                     pMagSf[facei],
-                    pMeshPhi[facei],
-                    pInf,
-                    q
-
+		    pMshPhi[facei]
                 );
             }
         }
     }
 }
 
-template<class Flux, class Limiter>
-Foam::tmp<Foam::surfaceScalarField> Foam::numericFlux<Flux, Limiter>::meshPhi() const
+Foam::tmp<Foam::surfaceScalarField> numericFlux::meshPhi() const
 {
-    if (this->mesh().moving()) 
+    if (mesh_.moving()) 
     {
-        // Info << "mesh is moving"<<endl;
         return  fvc::meshPhi(U_);
     } 
 
@@ -401,17 +231,18 @@ Foam::tmp<Foam::surfaceScalarField> Foam::numericFlux<Flux, Limiter>::meshPhi() 
                 IOobject
                 (
                 "meshPhi",
-                this->mesh().time().timeName(),
-                this->mesh(),
+                mesh().time().timeName(),
+                mesh(),
                 IOobject::NO_READ,
                 IOobject::NO_WRITE,
                 false
                 ),
-                this->mesh(),
+                mesh(),
                 dimensionedScalar("0", dimVolume/dimTime, 0.0)
             )
         );
     
 }
+
 
 // ************************************************************************* //

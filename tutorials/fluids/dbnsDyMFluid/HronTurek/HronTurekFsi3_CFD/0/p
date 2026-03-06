@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| solids4foam: solid mechanics and fluid-solid interaction simulations        |
+| Version:     v2.0                                                           |
+| Web:         https://solids4foam.github.io                                  |
+| Disclaimer:  This offering is not approved or endorsed by OpenCFD Limited,  |
+|              producer and distributor of the OpenFOAM software via          |
+|              www.openfoam.com, and owner of the OPENFOAM® and OpenCFD®      |
+|              trade marks.                                                   |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      p;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [1 -1 -2 0 0 0 0];
+
+internalField   uniform  1e5;
+
+boundaryField
+{
+    plate
+    {
+        type zeroGradient;
+    }
+    outlet
+    {
+        type fixedValue;
+        value uniform 1e5;
+    }
+    inlet
+    {
+        type               zeroGradient;
+        // type            mytotalPressureSG;
+        // rho             none;
+        // psi             psi;
+        // gamma           2.782917482129208;
+        // p0              uniform 100500.000058;
+        // value           uniform   1e5;
+       
+    }
+    cylinder
+    {
+        type zeroGradient;
+    }
+    bottom
+    {
+        type zeroGradient;
+    }
+    top
+    {
+        type zeroGradient;
+    }
+    frontAndBackPlanes
+    {
+        type empty;
+    }
+}
+
+// ************************************************************************* //

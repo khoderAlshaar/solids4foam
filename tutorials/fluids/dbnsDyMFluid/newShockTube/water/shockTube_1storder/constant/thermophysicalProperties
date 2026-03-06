@@ -1,0 +1,49 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     5.0                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  | For copyright notice see file Copyright         |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+/* 
+thermoType      eRhoThermo<constTransportEos<SGEOS>>;
+
+//              name   q pinf gamma cv mu Pr
+fluidProperties water -1143982.3499999999 773221168.8164893 2.782917482129208 1505.254 0.0 6.0;  */
+
+
+
+thermoType     externalStiffenedGasThermo ;//externalStiffenedGasThermo;
+
+
+
+stiffenedGasCoeffs
+{
+    gamma  2.8;
+    pInf 8.5e08;
+    Cv 1495;
+    q 0;
+    mu 0;
+    Pr 7;
+};
+
+/* thermoType      eRhoThermo<constTransportEos<SGEOS>>;
+
+// //              name   q pinf gamma cv mu Pr
+// fluidProperties water -1143982.3499999999 773221168.8164893 2.782917482129208 1505.254 0.0 6.0; 
+
+
+//              name   q pinf gamma cv mu Pr
+fluidProperties water 0 8.5e08 2.8 1495 0.0 1.0;  */
+
+// ************************************************************************* //
+
+// ************************************************************************* //

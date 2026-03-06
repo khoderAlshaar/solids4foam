@@ -1,31 +1,22 @@
 /*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     4.1
-    \\  /    A nd           | Web:         http://www.foam-extend.org
-     \\/     M anipulation  | For copyright notice see file Copyright
--------------------------------------------------------------------------------
-License
-    This file is part of foam-extend.
+  L2-Roe low-dissipation Roe flux for low Mach numbers
+  Implementation based on Oßwald et al. (2016) and Rieper (2011).
 
-    foam-extend is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation, either version 3 of the License, or (at your
-    option) any later version.
-
-    foam-extend is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
-
+  Key corrections:
+  - Local Mach number based on max(ML, MR), not Roe-averaged velocity
+  - Scaling applied to velocity jumps in wave strength computation
+  - Shock switch properly applied to both normal and tangential components
+  - Physical flux evaluation unchanged
 \*---------------------------------------------------------------------------*/
 
 #include "roeALELowMaFlux.H"
+#include "addToRunTimeSelectionTable.H"
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+namespace Foam
+{
+    defineTypeNameAndDebug(roeALELowMaFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, roeALELowMaFlux, dictionary);
+}
 
 void Foam::roeALELowMaFlux::evaluateFlux
 (
@@ -44,30 +35,27 @@ void Foam::roeALELowMaFlux::evaluateFlux
     const scalar& CvRight,
     const vector& Sf,
     const scalar& magSf,
-    const scalar& meshPhi,
-    const scalar& CpLeft,
-    const scalar& CpRight,
-    const scalar& pInf,
-    const scalar& gamma
+    const scalar& meshPhi
 ) const
 {
+
+//   if (mag(meshPhi)>0.0) 
+//     {
+//       FatalError
+//         << "This dbnsFlux is not ready to run with moving meshes." << nl
+//         << exit(FatalError);
+//     };
     // cell face *normal* velocity w_n
-    const scalar w_n = meshPhi / (magSf + VSMALL);
-    // Info << "w_n: " << w_n <<endl;
     // const scalar w_n = 0.0;
-
+   
+    const scalar w_n = meshPhi / (magSf + VSMALL);
     // Step 1: decode rho left and right:
-    scalar rhoLeft  = (pLeft  +  pInf) / ((gamma - 1.0) * CvLeft * TLeft);
-    scalar rhoRight = (pRight +  pInf) / ((gamma - 1.0) * CvRight * TRight);
+    scalar rhoLeft = pLeft/(RLeft*TLeft);
+    scalar rhoRight = pRight/(RRight*TRight);
 
-
-
-    //! Decode left and right total energy:
-    // scalar eLeft = CvLeft*TLeft + 0.5*magSqr(ULeft);
-    // scalar eRight = CvRight*TRight + 0.5*magSqr(URight);
-
-    scalar eLeft  = (pLeft  + gamma*pInf)/((gamma-1)*rhoLeft)  + 0.5*magSqr(ULeft);
-    scalar eRight = (pRight + gamma*pInf)/((gamma-1)*rhoRight) + 0.5*magSqr(URight);
+    // Decode left and right total energy:
+    scalar eLeft = CvLeft*TLeft + 0.5*magSqr(ULeft);
+    scalar eRight = CvRight*TRight + 0.5*magSqr(URight);
 
     // Adiabatic exponent is constant for ideal gas but if Cp=Cp(T)
     // it must be computed for each cell and evaluated at each face
@@ -82,7 +70,7 @@ void Foam::roeALELowMaFlux::evaluateFlux
     const scalar contrVLeft  = (ULeft & normalVector);
     const scalar contrVRight = (URight & normalVector);
 
-    //! Compute left and right total enthalpies:
+    // Compute left and right total enthalpies:
     const scalar hLeft = eLeft + pLeft/rhoLeft;
     const scalar hRight = eRight + pRight/rhoRight;
 
@@ -103,7 +91,7 @@ void Foam::roeALELowMaFlux::evaluateFlux
 
     // Speed of sound
     const scalar cTilde =
-        sqrt(max((gamma - 1)*(hTilde - 0.5*qTildeSquare), SMALL));
+        sqrt(max((kappaTilde - 1)*(hTilde - 0.5*qTildeSquare), SMALL));
 
     // Roe averaged contravariant velocity
     const scalar contrVTilde = (UTilde & normalVector);
@@ -113,60 +101,85 @@ void Foam::roeALELowMaFlux::evaluateFlux
     const scalar deltaRho = rhoRight - rhoLeft;
     const vector deltaU = URight - ULeft;
     const scalar deltaContrV = (deltaU & normalVector);
+    // -------------------------
+    // L2-Roe scaling: Compute local Mach number based on LEFT and RIGHT states
+    // -------------------------
+    //     const scalar UL = contrVLeft;
+    // const scalar UR = contrVRight;
+    
+    // speeds of sound (left and right states)
+    const scalar cLeft = sqrt(max((kappaLeft - 1)*(hLeft - 0.5*magSqr(ULeft)), SMALL));
+    const scalar cRight = sqrt(max((kappaRight - 1)*(hRight - 0.5*magSqr(URight)), SMALL));
 
-    // Step 4: compute wave strengths:
 
-    //find low-mach number correction function zeta
-    const scalar gammaLeft  = 1.0 + RLeft / CvLeft;
-    const scalar gammaRight = 1.0 + RRight / CvRight;
+    // Local Mach numbers at left and right states (based on total velocity magnitude)
+    const scalar ML = mag(ULeft) / (cLeft + VSMALL);
+    const scalar MR = mag(URight) / (cRight + VSMALL);
+    
+    // Scaling factor: min(1, max(ML, MR)) as per Equation (6) in the paper
+    const scalar Ma_local = max(ML, MR);
+    const scalar zeta = min(1.0, Ma_local);
 
-    const scalar aLeft  = sqrt(max((gamma*(pLeft + pInf))/rhoLeft,SMALL));
-    const scalar aRight  = sqrt(max((gamma*(pRight + pInf))/rhoRight,SMALL));
 
-    //full-velocity magnitude Mach numbers
-    const scalar magUL = mag(ULeft);
-    const scalar magUR = mag(URight);
+    // const vector UTilde_normal = contrVTilde * normalVector;
+    // const vector UTilde_tangent = UTilde - UTilde_normal;
+    // const scalar VTildeMag = mag(UTilde_tangent);
+    
+    // // Local Mach number as per Rieper (2011), Eq. (3.16):
+    // // Ma_local = (|U_n| + |V_t|) / a
+    // const scalar Ma_local = (mag(UTilde_normal) + mag(UTilde_tangent)) / (cTilde + VSMALL);
+    
+    // // Scaling factor: min(Ma_local, 1)
+    // const scalar zeta =  min(1.0, Ma_local);
 
-    const scalar MaLeft  = magUL / aLeft;
-    const scalar MaRight = magUR / aRight;
+    // -------------------------
+    // Scaled velocity jumps for L2-Roe
+    // -------------------------
+    
+    // Scale normal velocity jump (LMRoe + L2Roe)
+    const scalar deltaContrV_star = zeta * deltaContrV;
+    
+    // Tangential velocity components
+    const vector deltaU_nVec = deltaContrV * normalVector;
+    const vector deltaU_t = deltaU - deltaU_nVec;
+    
+    // Scale tangential velocity jump (L2Roe enhancement)
+    const vector deltaU_t_star = zeta * deltaU_t;
 
-    const scalar zeta = 1;//min(1, max(MaLeft, MaRight));
+    // -------------------------
+    // Wave strengths using scaled jumps
+    // -------------------------
 
-    // Roe and Pike - formulation
-    const scalar r1 =
-        (deltaP - rhoTilde*cTilde* zeta *deltaContrV)/(2.0*sqr(cTilde));
-    const scalar r2 = deltaRho - deltaP/sqr(cTilde);
-    const scalar r3 =
-        (deltaP + rhoTilde*cTilde* zeta *deltaContrV)/(2.0*sqr(cTilde));
+    // Acoustic wave strengths with SCALED normal velocity jump
+    const scalar r1 = (deltaP - rhoTilde * cTilde * deltaContrV_star) / (2.0*sqr(cTilde));
+    const scalar r3 = (deltaP + rhoTilde * cTilde * deltaContrV_star) / (2.0*sqr(cTilde));
+    
+    // Entropy wave strength (unscaled)
+    const scalar r2 = deltaRho - deltaP/(2.0*sqr(cTilde));
 
-    // Step 5: compute l vectors
+    // -------------------------
+    // Eigenvectors (right eigenvectors of Roe matrix)
+    // -------------------------
+    
+    const scalar l1rho = 1.0;
+    const scalar l2rho = 1.0;
+    const scalar l3rho = 0.0;
+    const scalar l4rho = 1.0;
 
-    // rho row:
-    const scalar l1rho = 1;
-    const scalar l2rho = 1;
-    const scalar l3rho = 0;
-    const scalar l4rho = 1;
-
-    // first U column
     const vector l1U = UTilde - cTilde*normalVector;
-
-    // second U column
     const vector l2U = UTilde;
-
-    // third U column
-    const vector l3U = deltaU - deltaContrV*normalVector;
-
-    // fourth U column
+    const vector l3U = deltaU_t_star;  // Shear wave uses SCALED tangential jump
     const vector l4U = UTilde + cTilde*normalVector;
 
-    // E row
     const scalar l1e = hTilde - cTilde*contrVTilde;
     const scalar l2e = 0.5*qTildeSquare;
-    const scalar l3e = (UTilde & deltaU) - contrVTilde*deltaContrV;
+    const scalar l3e = (UTilde & deltaU_t_star);  // Consistent with scaled jump
     const scalar l4e = hTilde + cTilde*contrVTilde;
 
-    // Step 6: compute eigenvalues
-
+    // -------------------------
+    // Eigenvalues (wave speeds)
+    // -------------------------
+ 
     // derived from algebra by hand, only for Euler equation usefull
     scalar lambda1 = mag(contrVTilde - cTilde - w_n);
     scalar lambda2 = mag(contrVTilde - w_n);
@@ -185,13 +198,13 @@ void Foam::roeALELowMaFlux::evaluateFlux
 
     // Step 7a: Alternative entropy correction: Felipe Portela, 9/Oct/2013
 
-    // const scalar UL = ULeft & normalVector;
-    // const scalar UR = URight & normalVector;
+    const scalar UL = ULeft & normalVector;
+    const scalar UR = URight & normalVector;
     // const scalar cLeft = sqrt
     // (
     //     max
     //     (
-    //         ( gamma - 1)*(hLeft - 0.5*magSqr(ULeft)),
+    //         (kappaLeft - 1)*(hLeft - 0.5*magSqr(ULeft)),
     //         SMALL
     //     )
     // );
@@ -200,31 +213,31 @@ void Foam::roeALELowMaFlux::evaluateFlux
     // (
     //     max
     //     (
-    //         (gamma - 1)*(hRight - 0.5*magSqr(URight)),
+    //         (kappaRight - 1)*(hRight - 0.5*magSqr(URight)),
     //         SMALL
     //     )
     // );
 
-    // // First eigenvalue: U - c
-    // scalar eps = 2*max(0,(UR - cRight) - (UL - cLeft));
-    // if (lambda1 < eps)
-    // {
-    //     lambda1 = (sqr(lambda1) + sqr(eps))/(2.0*eps);
-    // }
+    // First eigenvalue: U - c
+    scalar eps = 2*max(0,(UR - cRight) - (UL - cLeft));
+    if (lambda1 < eps)
+    {
+        lambda1 = (sqr(lambda1) + sqr(eps))/(2.0*eps);
+    }
 
-    // // Second eigenvalue: U
-    // eps = 2*max(0, UR - UL);
-    // if (lambda2 < eps)
-    // {
-    //     lambda2 = (sqr(lambda2) + sqr(eps))/(2.0*eps);
-    // }
+    // Second eigenvalue: U
+    eps = 2*max(0, UR - UL);
+    if (lambda2 < eps)
+    {
+        lambda2 = (sqr(lambda2) + sqr(eps))/(2.0*eps);
+    }
 
-    // // Third eigenvalue: U + c
-    // eps = 2*max(0,(UR + cRight) - (UL + cLeft));
-    // if (lambda3 < eps)
-    // {
-    //     lambda3 = (sqr(lambda3) + sqr(eps))/(2.0*eps);
-    // }
+    // Third eigenvalue: U + c
+    eps = 2*max(0,(UR + cRight) - (UL + cLeft));
+    if (lambda3 < eps)
+    {
+        lambda3 = (sqr(lambda3) + sqr(eps))/(2.0*eps);
+    }
 
 
     // Step 8: Compute flux differences
@@ -235,9 +248,9 @@ void Foam::roeALELowMaFlux::evaluateFlux
     const scalar diffF15 = lambda1*r1*l1e;
 
     // Components of deltaF2
-    const scalar diffF21 = lambda2*(r2*l2rho +  rhoTilde*l3rho);
-    const vector diffF224 = lambda2*(r2*l2U +  zeta*rhoTilde*l3U);
-    const scalar diffF25 = lambda2*(r2*l2e + zeta*rhoTilde*l3e);
+    const scalar diffF21 = lambda2*(r2*l2rho + rhoTilde*l3rho);
+    const vector diffF224 = lambda2*(r2*l2U + rhoTilde*l3U);
+    const scalar diffF25 = lambda2*(r2*l2e + rhoTilde*l3e);
 
     // Components of deltaF3
     const scalar diffF31 = lambda3*r3*l4rho;
