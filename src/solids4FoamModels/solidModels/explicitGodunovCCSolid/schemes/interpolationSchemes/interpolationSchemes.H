@@ -63,10 +63,10 @@ class interpolationSchemes
         const labelUList& own_;
 
         //- Material cell centre coordinates
-        const volVectorField& X_;
+        const volVectorField X_;
 
         //- Material face centre coordinates
-        const surfaceVectorField& XF_;
+        const surfaceVectorField XF_;
 
         //- Material nodal coordinates
         const pointField& XN_;

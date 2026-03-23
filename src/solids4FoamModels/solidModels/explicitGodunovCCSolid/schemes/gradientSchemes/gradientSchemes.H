@@ -57,19 +57,19 @@ class gradientSchemes
         const fvMesh& mesh_;
 
         //- Cell owners
-        const labelUList& own_;
+        const labelUList own_;
 
         //- Cell neighbours
-        const labelUList& nei_;
+        const labelUList nei_;
 
         // Cell centre coordinates
-        const volVectorField& X_;
+        const volVectorField X_;
 
         // Face centre coordinates
-        const surfaceVectorField& XF_;
+        const surfaceVectorField XF_;
 
         //- Material nodal coordinates
-        const pointField& XN_;
+        const pointField XN_;
 
         //- Inverse of distance matrix
         volTensorField Ainv_;

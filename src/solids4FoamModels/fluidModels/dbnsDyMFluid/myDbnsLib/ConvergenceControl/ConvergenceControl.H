@@ -35,6 +35,8 @@ private:
     OFstream pseudoFile_;
     OFstream physicalFile_;
 
+        word solverType_;   
+
 public:
 
     // Constructor
@@ -62,6 +64,11 @@ public:
     inline label& pseudoMaxIters()  
     {
          return pseudoMaxIters_; 
+    }
+    
+    inline word& solverType()  
+    {
+         return solverType_; 
     }
 };
 

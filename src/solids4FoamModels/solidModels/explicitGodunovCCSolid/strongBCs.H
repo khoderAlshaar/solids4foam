@@ -33,7 +33,7 @@ if (symmetricPatchID_ != -1)
     forAll(mesh().boundary()[symmetricPatchID_], facei)
     {
         const label& faceID =
-            mesh().boundary()[symmetricPatchID_].start() + facei;
+            mesh().boundary()[symmetricPatchID_].patch().start() + facei;
 
         forAll(mesh().faces()[faceID], node)
         {
@@ -55,7 +55,7 @@ if (symmetricXpatchID_ != -1)
     forAll(mesh().boundary()[symmetricXpatchID_], facei)
     {
         const label& faceID =
-            mesh().boundary()[symmetricXpatchID_].start() + facei;
+            mesh().boundary()[symmetricXpatchID_].patch().start() + facei;
 
         forAll(mesh().faces()[faceID], node)
         {
@@ -77,7 +77,7 @@ if (symmetricYpatchID_ != -1)
     forAll(mesh().boundary()[symmetricYpatchID_], facei)
     {
         const label& faceID =
-            mesh().boundary()[symmetricYpatchID_].start() + facei;
+            mesh().boundary()[symmetricYpatchID_].patch().start() + facei;
 
         forAll(mesh().faces()[faceID], node)
         {
@@ -99,7 +99,7 @@ if (symmetricZpatchID_ != -1)
     forAll(mesh().boundary()[symmetricZpatchID_], facei)
     {
         const label& faceID =
-            mesh().boundary()[symmetricZpatchID_].start() + facei;
+            mesh().boundary()[symmetricZpatchID_].patch().start() + facei;
 
         forAll(mesh().faces()[faceID], node)
         {

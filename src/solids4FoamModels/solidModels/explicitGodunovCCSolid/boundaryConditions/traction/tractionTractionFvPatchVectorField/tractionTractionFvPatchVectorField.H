@@ -1,29 +1,25 @@
 /*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Copyright (C) 2011-2018 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
 License
-    This file is part of solids4foam.
+    This file is part of OpenFOAM.
 
-    solids4foam is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation, either version 3 of the License, or (at your
-    option) any later version.
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    solids4foam is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    General Public License for more details.
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
 
     You should have received a copy of the GNU General Public License
-    along with solids4foam.  If not, see <http://www.gnu.org/licenses/>.
-
-Original Authors
-    Jibran Haider - explicitSolidDynamics toolkit
-
-    Original source code retrieved from:
-    https://github.com/jibranhaider/explicitSolidDynamics/
-
-Modifications by
-    Khoder Alhamwi Alshaar, IITB - Modified to implement the explicit Godunov
-    scheme for solid mechanics as part of the solids4foam project.
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
     Foam::tractionTractionFvPatchVectorField
@@ -69,11 +65,13 @@ SourceFiles
 #ifndef tractionTractionFvPatchVectorField_H
 #define tractionTractionFvPatchVectorField_H
 
-#include "fvPatchFields.H"
 #include "fixedValueFvPatchFields.H"
+#include "fixedValueFvsPatchFields.H"
 #include "addToRunTimeSelectionTable.H"
+#include "volFields.H"
 #include "surfaceFields.H"
-#include "interpolationTable.H"
+
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -100,8 +98,6 @@ private:
     // Boundary pressure
     scalar p_P_;
 
-    // //- Pressure time series
-    // interpolationTable<scalar> pressureSeries_;
 
 public:
 

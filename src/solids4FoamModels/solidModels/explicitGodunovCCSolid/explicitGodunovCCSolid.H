@@ -57,7 +57,8 @@ SourceFiles
 #include "gradientSchemes.H"
 #include "interpolationSchemes.H"
 #include "angularMomentum.H"
-#include "numericalFlux.H"
+// #include "numericalFlux.H"
+#include "solidNumericFlux.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -133,7 +134,7 @@ class explicitGodunovCCSolid
     //Creating mesh normal fields
 
     // // Material normals
-    // const surfaceVectorField N_;
+    const surfaceVectorField N_;
 
     // // Spatial normals
     // surfaceVectorField n_;
@@ -214,8 +215,17 @@ class explicitGodunovCCSolid
     // Runge-Kutta stage
     scalarList RKstages_;
 
-    mutable autoPtr<numericalFlux> numericalFluxPtr_; // Member variable
+    mutable autoPtr<solidNumericFlux> numericalFluxPtr_; // Member variable
 
+    surfaceVectorField lmC_;
+
+    interpolationSchemes interpolate_;
+
+    // Cell averaged linear momentum
+    volVectorField lmR_;
+
+    // Local gradient of cell averaged linear momentum
+    volTensorField lmRgrad_;
 
     // Private Member Functions
 
@@ -283,7 +293,7 @@ public:
         // Edit
 
             //- Return const reference to the numericalFlux 
-            numericalFlux& flux() ;
+            solidNumericFlux& flux() ;
 
             //- Evolve the solid solver and solve the mathematical model
             virtual bool evolve();

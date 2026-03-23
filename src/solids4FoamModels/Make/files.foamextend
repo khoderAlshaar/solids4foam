@@ -46,8 +46,16 @@ $(explicitGodunovCCSolid)/schemes/gradientSchemes/gradientSchemes.C
 $(explicitGodunovCCSolid)/schemes/interpolationSchemes/interpolationSchemes.C
 $(explicitGodunovCCSolid)/schemes/angularMomentum/angularMomentum.C
 $(explicitGodunovCCSolid)/numericalFlux/contactFlux/contactFlux.C
+
 $(explicitGodunovCCSolid)/numericalFlux/roeFlux/roeFlux.C
 $(explicitGodunovCCSolid)/numericalFlux/numericalFlux.C
+
+$(explicitGodunovCCSolid)/solidDynamicsFlux/solidFlux/solidFlux.C
+$(explicitGodunovCCSolid)/solidDynamicsFlux/solidFlux/solidRoeFlux/solidRoeFlux.C
+$(explicitGodunovCCSolid)/solidDynamicsFlux/solidNumericFlux/solidNumericFlux.C
+
+
+
 $(explicitGodunovCCSolid)/explicitGodunovCCSolid.C
 
 
@@ -60,26 +68,27 @@ fluidModels/sonicLiquidFluid/sonicLiquidFluid.C
 
 
 
-fluidModels/dbnsDyMFluid/myDbnsLib_2/dbnsFlux/hllcSGLMFlux/hllcSGLMFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib_2/dbnsFlux/hllcSGLMALEFlux/hllcSGLMALEFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib_2/dbnsFlux/hllcSGALEFlux/hllcSGALEFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcSGLMFlux/hllcSGLMFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcSGLMALEFlux/hllcSGLMALEFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcSGALEFlux/hllcSGALEFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/SGL2RoeALEFlux/SGL2RoeALEFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/SGL2RoeFlux/SGL2RoeFlux.C
 
 
-fluidModels/dbnsDyMFluid/myDbnsLib_2/basicNumericFlux/basicNumericFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib_2/basicNumericFlux/newBasicNumericFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib_2/numericFlux/numericFluxes.C
 
-fluidModels/dbnsDyMFluid/myDbnsLib_2/timeStepping/localTimeStep/localTimeStep.C
-fluidModels/dbnsDyMFluid/myDbnsLib_2/timeStepping/myBackwardDualDdtScheme/myBackwardDualDdtSchemes.C
+fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/basicNumericFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/newBasicNumericFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/numericFlux/numericFluxes.C
 
-fluidModels/dbnsDyMFluid/myDbnsLib_2/thermoPhysicalModel/basic/psiThermo/externalStiffenedGasThermo/externalStiffenedGasThermo.C
+fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/localTimeStep/localTimeStep.C
+fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/myBackwardDualDdtScheme/myBackwardDualDdtSchemes.C
 
-fluidModels/dbnsDyMFluid/myDbnsLib_2/ConvergenceControl/ConvergenceControl.H
+fluidModels/dbnsDyMFluid/myDbnsLib/thermoPhysicalModel/basic/psiThermo/externalStiffenedGasThermo/externalStiffenedGasThermo.C
+
+fluidModels/dbnsDyMFluid/myDbnsLib/ConvergenceControl/ConvergenceControl.H
 
 
 fluidModels/dbnsDyMFluid/dbnsDyMFluid.C
-
-
 
 
 

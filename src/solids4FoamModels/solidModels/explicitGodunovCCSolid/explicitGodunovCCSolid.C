@@ -40,17 +40,23 @@ addToRunTimeSelectionTable(solidModel, explicitGodunovCCSolid, dictionary);
 
 
 // * * * * * * * * * * *  Private Member Functions * * * * * * * * * * * * * //
-void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux() 
+void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux()
 {
-    Info << "making Numerial Flux" <<endl;
-    if (!numericalFluxPtr_.empty())
+    Info << "Making numerical flux" << endl;
+
+    if (numericalFluxPtr_.valid())
     {
-        FatalErrorIn("void Foam::explicitGodunovCCSolid::makeNumericalFlux() const")
-            << "pointer already set!" << abort(FatalError);
+        FatalErrorIn
+        (
+            "void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux()"
+        )
+        << "Pointer already set!" << abort(FatalError);
     }
 
-        numericalFluxPtr_ = numericalFlux::New 
-        (       
+    numericalFluxPtr_.reset
+    (
+        new solidNumericFlux
+        (
             runTime_,
             region_,
             mesh(),
@@ -62,8 +68,8 @@ void Foam::solidModels::explicitGodunovCCSolid::makeNumericalFlux()
             op_,
             mech_,
             grad_
-        );
-
+        )
+    );
 }
 
 bool explicitGodunovCCSolid::converged
@@ -238,7 +244,7 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     xF_(mesh().Cf()),
 
     // // Creating mesh normal fields
-    // N_((Sf_ / mesh().magSf()).ref()),
+    N_((Sf_ / mesh().magSf())),
     // n_(N_),
 
     // Creating linear momentum fields
@@ -361,7 +367,20 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     // Runge-Kutta stage
     RKstages_(2),
 
-    numericalFluxPtr_()
+    numericalFluxPtr_(),
+    lmC_
+    (
+        IOobject("lmC", mesh()),
+        mesh(),
+        dimensionedVector("lmC", dimensionSet(1 ,-2 ,-1 ,0 ,0 ,0 ,0), vector::zero)
+    ),
+    interpolate_(mesh()),
+
+    // Cell averaged linear momentum
+     lmR_(interpolate_.surfaceToVol(lmC_)),
+
+    // Local gradient of cell averaged linear momentum
+    lmRgrad_(grad_.localGradient(lmR_, lmC_))
 
 {
 
@@ -431,7 +450,7 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
-Foam::numericalFlux& explicitGodunovCCSolid::flux() 
+Foam::solidNumericFlux& explicitGodunovCCSolid::flux() 
 {
     if (numericalFluxPtr_.empty())
     {
@@ -444,7 +463,7 @@ Foam::numericalFlux& explicitGodunovCCSolid::flux()
 
 bool explicitGodunovCCSolid::evolve()
 {
-    Info<< "starting of evolve function" << endl;
+    Info<< "starting of evolve function New explicite" << endl;
     // Mesh update loop
     do
     {

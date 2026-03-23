@@ -134,6 +134,12 @@ public:
             //- Return energy flux
             virtual const surfaceScalarField& rhoEFlux() const = 0;
 
+        //                 //- Return mesh flux
+        //    virtual const surfaceScalarField& meshPhi() const = 0;
+
+        //     //- Return mesh flux
+        //    virtual surfaceScalarField& meshPhi() =0;
+
 
        // Return residuals
 
@@ -145,6 +151,8 @@ public:
 
             //- Return energy equation flux
             virtual tmp<scalarField> rhoEResidual() const = 0;
+
+            
 
 
         // Update fluxes based on current state

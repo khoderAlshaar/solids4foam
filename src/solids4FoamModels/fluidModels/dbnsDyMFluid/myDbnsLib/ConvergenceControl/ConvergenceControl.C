@@ -23,7 +23,8 @@ ConvergenceControl::ConvergenceControl(const Time& runTime, const fvMesh& mesh )
     physicalTolCounter_(0),
 
     pseudoFile_(runTime_.path()/"pseudoResiduals.csv"),
-    physicalFile_(runTime_.path()/"physicalResiduals.csv") // cleaned filename
+    physicalFile_(runTime_.path()/"physicalResiduals.csv"), // cleaned filename
+    solverType_("default")
 {
     // Headers
     pseudoFile_ << "timeIndex,pseudoIter,residual\n";
@@ -52,6 +53,10 @@ void ConvergenceControl::read(const dictionary& dict)
 
         pseudoStagnationTol_   = lookupOrDefault<scalar>(ms, "pseudoStagnationTol",   pseudoStagnationTol_);
         pseudoStagnationLimit_ = lookupOrDefault<label>(ms,  "pseudoStagnationLimit", pseudoStagnationLimit_);
+
+        ms.lookup("solverType") >> solverType_;
+
+    
     }
 
     if (dict.found("globalConvergence"))

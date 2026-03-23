@@ -1,19 +1,19 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
-  \\      /  F ield         | OpenFOAM:
-   \\    /   O peration     | 
-    \\  /    A nd           | For copyright notice see file Copyright
-     \\/     M anipulation  | 
+  \\      /  F ield         | foam-extend: Open Source CFD
+   \\    /   O peration     | Version:     5.0
+    \\  /    A nd           | Web:         http://www.foam-extend.org
+     \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
 License
-    This file isn't part of OpenFOAM nor foam-extend.
+    This file is part of foam-extend.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
+    foam-extend is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by the
     Free Software Foundation, either version 3 of the License, or (at your
     option) any later version.
 
-    OpenFOAM is distributed in the hope that it will be useful, but
+    foam-extend is distributed in the hope that it will be useful, but
     WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     General Public License for more details.
@@ -25,13 +25,10 @@ Class
     numericFlux
 
 Description
-    Single level numeric flux class for density-based solvers. Based on
-    numericFlux by Jemcov and Jasak (foam-extend)
+    Numeric flux class for density-based solvers
 
 Author
-    Aleksandar Jemcov
-    Rewrite by Hrvoje Jasak
-    Rewrite by Jiri Furst
+    Ghanshyam Bharate
 
 SourceFiles
     numericFlux.H
@@ -43,11 +40,9 @@ SourceFiles
 #define numericFlux_H
 
 #include "numericFluxBase.H"
-#include "dbnsFlux.H"
 #include "basicThermo.H"
-// #include "newGradient.H"
-// #include "MRFZoneList.H"
- 
+#include "fvc.H"
+#include "tmp.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -57,198 +52,196 @@ namespace Foam
                           Class numericFlux Declaration
 \*---------------------------------------------------------------------------*/
 
+template<class Flux, class Limiter>
 class numericFlux
 :
-    public numericFluxBase
+    public numericFluxBase<Flux>
 {
     // Private data
 
-    autoPtr<dbnsFlux> pFlux_;
-    
-    //- Reference to mesh
-    const fvMesh& mesh_;
-    
-    // Reference to primitive fields
-    
-    //- Static pressure
-    const volScalarField& p_;
-    
-    //- Velocity
-    const volVectorField& U_;
-    
-    //- Static temperature
-    const volScalarField& T_;
-    
-    //- Reference to the thermophysicalModel
-    basicThermo& thermo_;
-    
-    //- Reference to MRFZones
-    // const MRFZoneList& MRF_;
+        // Reference to primitive fields
+                //- Reference to mesh
+            const fvMesh& mesh_;
+            //- Static pressure
+            const volScalarField& p_;
 
-    // Fluxes
-    
-    //- Density flux
-    surfaceScalarField rhoFlux_;
-    
-    //- Velocity flux
-    surfaceVectorField rhoUFlux_;
-    
-    //- Energy flux
-    surfaceScalarField rhoEFlux_;
+            //- Velocity
+            const volVectorField& U_;
 
-    //  autoPtr<newGradient> grad_;
+            //- Static temperature
+            const volScalarField& T_;
 
-    // //     // Gradient of cell linear momentum
-    // volTensorField UGrad_;
-    // volVectorField pGrad_;
-    // volVectorField tGrad_;
+            //- Reference to the thermophysicalModel
+            basicThermo& thermo_;
+        
+        // Thermodynamic parameters
+            
+            //- Reference energy
+            dimensionedScalar q_;
+
+            //- Reference pressure
+            dimensionedScalar pInf_;
+
+            //- heat capacity ratio
+            dimensionedScalar gamma_;
+            
+            //- Specific heat capacity at constant volume
+            dimensionedScalar cv_;
+            
+        // Fluxes
+
+            //- Density flux
+            surfaceScalarField rhoFlux_;
+
+            //- Velocity flux
+            surfaceVectorField rhoUFlux_;
+
+            //- Energy flux
+            surfaceScalarField rhoEFlux_;
+            
+            surfaceScalarField fp_;
+
+            volScalarField fp1_;
 
 
 
 
+        // Gradients: no longer stored.  HJ, 22/Apr/2016
 
-    // surfaceScalarField meshPhi_;
-    
+
     // Private Member Functions
-    
-    //- Disallow default bitwise copy construct
-    numericFlux(const numericFlux&);
-    
-    //- Disallow default bitwise assignment
-    void operator=(const numericFlux&);
-    
-    
-    //- Return internal field of mass flux
-    const scalarField& rhoFluxI() const
+
+        //- Disallow default bitwise copy construct
+        numericFlux(const numericFlux&);
+
+        //- Disallow default bitwise assignment
+        void operator=(const numericFlux&);
+
+
+        //- Return internal field of mass flux
+        const scalarField& rhoFluxI() const
         {
             return rhoFlux_.internalField();
         }
-    
-    //- Return access to internal field of mass flux
-    //scalarField& rhoFluxI()
-    //    {
-    //        return rhoFlux_.internalField();
-    //    }
-    
-    //- Return internal field of momentum flux
-    const vectorField& rhoUFluxI() const
+
+        //- Return access to internal field of mass flux
+        scalarField& rhoFluxI()
+        {
+            return rhoFlux_.internalField();
+        }
+
+        //- Return internal field of momentum flux
+        const vectorField& rhoUFluxI() const
         {
             return rhoUFlux_.internalField();
         }
-    
-    //- Return access to internal field of momentum flux
-    //vectorField& rhoUFluxI()
-    //    {
-    //        return rhoUFlux_.internalField();
-    //    }
-    
-    //- Return access to internal field of energy flux
-    const scalarField& rhoEFluxI() const
+
+        //- Return access to internal field of momentum flux
+        vectorField& rhoUFluxI()
+        {
+            return rhoUFlux_.internalField();
+        }
+
+         //- Return access to internal field of energy flux
+        const scalarField& rhoEFluxI() const
         {
             return rhoEFlux_.internalField();
         }
-    
-    //- Return access to internal field of energy flux
-    //scalarField& rhoEFluxI()
-    //    {
-    //        return rhoEFlux_.internalField();
-    //    }
-    
-    
+
+        //- Return access to internal field of energy flux
+        scalarField& rhoEFluxI()
+        {
+            return rhoEFlux_.internalField();
+        }
+
+
 public:
-    
+
+    //- Runtime type information
+    TypeName("numericFlux");
+
     // Constructors
-    
-    //- Construct from components
-    numericFlux
-    (
-        const volScalarField& p,
-        const volVectorField& U,
-        const volScalarField& T,
-        basicThermo& thermo
-        // const MRFZoneList& MRF
-    );
-    
-    
+
+        //- Construct from components
+        numericFlux
+        (
+            const volScalarField& p,
+            const volVectorField& U,
+            const volScalarField& T,
+            basicThermo& thermo
+        );
+
+
     //- Destructor
     virtual ~numericFlux()
-        {}
+    {}
 
-    
+
     // Member Functions
-    
-    //- Return mesh reference
-    const fvMesh& mesh() const
-        {
-            return mesh_;
-        }
+    void evalautePressureSensor
+    (
+        // const surfaceScalarField& p_neg,
+        // const surfaceScalarField& p_pos
+    );
 
-    
-    // Return fluxes
-    
-    //- Return density flux
-    virtual const surfaceScalarField& rhoFlux() const
-        {
-            return rhoFlux_;
-        }
-    
-    //- Return velocity flux
-    virtual const surfaceVectorField& rhoUFlux() const
-        {
-            return rhoUFlux_;
-        }
-    
-    //- Return energy flux
-    virtual const surfaceScalarField& rhoEFlux() const
-        {
-            return rhoEFlux_;
-        }
-    
-    
-    // Return residuals
-    
-    //- Return density equation residual
-    virtual tmp<scalarField> rhoResidual() const
-        {
-            return fvc::div(rhoFlux_)().internalField();
-        }
-    
-    //- Return momentum equation flux
-    virtual tmp<vectorField> rhoUResidual() const
-        {
-            return fvc::div(rhoUFlux_)().internalField();
-        }
-    
-    //- Return energy equation flux
-    virtual tmp<scalarField> rhoEResidual() const
-        {
-            return fvc::div(rhoEFlux_)().internalField();
-        }
-        
-        // //- Return mesh flux
-        // const surfaceScalarField& meshPhi() const
-        // {
-        //     return meshPhi_;
-        // }
+        // Return fluxes
 
-        // //- Return mesh flux
-        // surfaceScalarField& meshPhi()
-        // {
-        //     return meshPhi_;
-        // }
-    // Update fluxes based on current state
-    
-    //- Compute flux
-    virtual void computeFlux();
+            //- Return density flux
+            virtual const surfaceScalarField& rhoFlux() const
+            {
+                return rhoFlux_;
+            }
 
-  tmp<Foam::surfaceScalarField> meshPhi() const;
+            //- Return velocity flux
+            virtual const surfaceVectorField& rhoUFlux() const
+            {
+                return rhoUFlux_;
+            }
 
+            //- Return energy flux
+            virtual const surfaceScalarField& rhoEFlux() const
+            {
+                return rhoEFlux_;
+            }
+
+
+       // Return residuals
+
+            //- Return density equation residual
+            virtual tmp<scalarField> rhoResidual() const
+            {
+                return fvc::div(rhoFlux_)().internalField();
+            }
+
+            //- Return momentum equation flux
+            virtual tmp<vectorField> rhoUResidual() const
+            {
+                return fvc::div(rhoUFlux_)().internalField();
+            }
+
+            //- Return energy equation flux
+            virtual tmp<scalarField> rhoEResidual() const
+            {
+                return fvc::div(rhoEFlux_)().internalField();
+            }
+
+
+        // Update fluxes based on current state
+
+            //- Compute flux
+            virtual void computeFlux();
+            
+        Foam::tmp<Foam::surfaceScalarField> meshPhi() const;
 };
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Foam
+
+#ifdef NoRepository
+#   include "numericFlux.C"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

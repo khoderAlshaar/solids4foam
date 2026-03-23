@@ -92,21 +92,30 @@ void gradientSchemes::distanceMatrix
 
     if (Pstream::parRun())
     {
-        forAll(mesh_.boundary(), patchID)
+        forAll(U.boundaryField(), patchID)
         {
-            if (mesh_.boundary()[patchID].coupled())
+
+            // const fvPatch& curPatch = U.boundaryField()[patchi].patch();
+
+            if (U.boundaryField()[patchID].coupled())
             {
-                const vectorField X_nei
-                (
-                  mesh_.C().boundaryField()[patchID].patchNeighbourField()
-                );
+                const fvPatch& p = mesh_.boundary()[patchID];
+                // Better version of d-vectors: Zeljko Tukovic, 25/Apr/2010
+                const vectorField pd = p.delta();
+
+                // const vectorField X_nei
+                // (
+                //   X_.boundaryField()[patchID].patchNeighbourField()
+                // );
+
 
                 forAll(mesh_.boundary()[patchID], facei)
                 {
                     const label& bCellID =
                         mesh_.boundaryMesh()[patchID].faceCells()[facei];
 
-                    const vector& d = X_nei[facei] - mesh_.C()[bCellID];
+                    // const vector& d = X_nei[facei] - X_[bCellID];
+                    const vector& d = pd[facei];
                     U[bCellID] += d*d;
                 }
             }
@@ -120,8 +129,8 @@ void gradientSchemes::distanceMatrix
 #else
     U.internalField() = inv(U.internalField());
 #endif
-
 }
+
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -131,8 +140,8 @@ void gradientSchemes::distanceMatrixLocal
     GeometricField<tensor, fvPatchField, volMesh>& Ainv
 ) const
 {
-    // const objectRegistry& db = mesh_.thisDb();
-    // const pointVectorField& lmN_ = db.lookupObject<pointVectorField> ("lmN");
+    const objectRegistry& db = mesh_.thisDb();
+    const pointVectorField& lmN_ = db.lookupObject<pointVectorField> ("lmN");
 
     tmp<GeometricField<tensor, fvPatchField, volMesh> > tvf
     (
@@ -169,9 +178,10 @@ void gradientSchemes::distanceMatrixLocal
             const label& bCellID =
                 mesh_.boundaryMesh()[patchID].faceCells()[facei];
 
-            vector d = mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID];
+            vector d = XF_.boundaryField()[patchID][facei] - mesh_.C()[bCellID];
             dCd[bCellID] += d*d;
 
+            //! works only with 3D geometry. Further invistigation required
             // if (lmN_.boundaryField().types()[patchID] == "fixedValue")
             // {
             //     const label& faceID =
@@ -181,15 +191,15 @@ void gradientSchemes::distanceMatrixLocal
             //     {
             //         const label& nodeID = mesh_.faces()[faceID][nodei];
 
-            //         d = mesh_.points()[nodeID] - mesh_.C()[bCellID];
+            //         d = XN_[nodeID] - X_[bCellID];
             //         dCd[bCellID] += d * d;
 
             //         for (int i=0; i<7; i++)
             //         {
             //             d =
-            //                 ((((i+1)*mesh_.points()[nodeID])
-            //               + ((7 - i)*mesh_.Cf().boundaryField()[patchID][facei]))/8.0)
-            //               - mesh_.C()[bCellID];
+            //                 ((((i+1)*XN_[nodeID])
+            //               + ((7 - i)*XF_.boundaryField()[patchID][facei]))/8.0)
+            //               - X_[bCellID];
             //             dCd[bCellID] += d * d;
             //         }
             //     }
@@ -197,12 +207,17 @@ void gradientSchemes::distanceMatrixLocal
         }
     }
 
-
 #ifdef OPENFOAM_NOT_EXTEND
+    // #pragma message("Compiling OPENFOAM_NOT_EXTEND branch")
+
     Ainv.primitiveFieldRef() = inv(dCd.internalField());
 #else
+    // #pragma message("Compiling EXTEND branch")
+
     Ainv.internalField() = inv(dCd.internalField());
 #endif
+
+
 
 }
 
@@ -251,10 +266,10 @@ volVectorField gradientSchemes::gradient
         {
             if (mesh_.boundary()[patchID].coupled())
             {
-                const vectorField X_nei
-                (
-                  mesh_.C().boundaryField()[patchID].patchNeighbourField()
-                );
+                const fvPatch& curPatch = mesh_.boundary()[patchID];
+                // distance between two cell centers accross coupled pathes
+                const vectorField pd = curPatch.delta();
+   
 
                 const scalarField U_nei
                 (
@@ -266,7 +281,7 @@ volVectorField gradientSchemes::gradient
                     const label& bCellID =
                         mesh_.boundaryMesh()[patchID].faceCells()[facei];
 
-                    const vector& d = X_nei[facei] - mesh_.C()[bCellID];
+                    const vector& d = pd[facei];
 
                     Ugrad[bCellID] +=
                         Ainv_[bCellID] & (U_nei[facei]-U[bCellID])*d;
@@ -281,7 +296,6 @@ volVectorField gradientSchemes::gradient
 
     return Ugrad;
 }
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -351,6 +365,7 @@ volTensorField gradientSchemes::gradient
 
     return Ugrad;
 }
+
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -483,7 +498,7 @@ volTensorField gradientSchemes::localGradient
             const label& bCellID =
                 mesh_.boundaryMesh()[patchID].faceCells()[facei];
 
-            vector d = mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID];
+            vector d = XF_.boundaryField()[patchID][facei] - mesh_.C()[bCellID];
 
             UgradX[bCellID] +=
                 AinvLocal_[bCellID]
@@ -500,7 +515,7 @@ volTensorField gradientSchemes::localGradient
             if (lmN_.boundaryField().types()[patchID] == "fixedValue")
             {
                 const label& faceID =
-                    mesh_.boundary()[patchID].patch().start()  + facei;
+                    mesh_.boundary()[patchID].patch().start() + facei;
 
                 forAll(mesh_.faces()[faceID], nodei)
                 {
@@ -581,29 +596,75 @@ void gradientSchemes::reconstruct
         {
             continue;
         }
-
-        forAll(mesh_.boundaryMesh()[patchID],facei)
+        
+        else if (mesh_.boundary()[patchID].coupled())
         {
-            const label& bCellID =
-                mesh_.boundaryMesh()[patchID].faceCells()[facei];
+
+            const fvPatch& curPatch = mesh_.boundary()[patchID];
+            // distance between two cell centers accross coupled pathes
+            const vectorField pd = curPatch.delta();
+            // distance between the patch face center and its owner cell center 
+            vectorField pDeltaRLeft = curPatch.fvPatch::delta();
+            // distance between the patch face center and its neighbore cell center 
+            vectorField pDdeltaRRight = pDeltaRLeft - pd; 
+
+            // tmp<vectorField> tmp_X_nei = X_.boundaryField()[patchID].patchNeighbourField();
+            // const vectorField& X_nei = tmp_X_nei();
+
+            tmp<scalarField> tmp_U_nei = U.boundaryField()[patchID].patchNeighbourField();
+            const scalarField& U_nei = tmp_U_nei();
+           
+            tmp<vectorField> tmp_Ugrad_nei = Ugrad.boundaryField()[patchID].patchNeighbourField();
+            const vectorField& Ugrad_nei = tmp_Ugrad_nei();
+
+            forAll(mesh_.boundary()[patchID], facei)
+            {
+                const label& bCellID =
+                    mesh_.boundaryMesh()[patchID].faceCells()[facei];
 
 #ifdef OPENFOAM_NOT_EXTEND
-            U.boundaryFieldRef()[patchID][facei] =
-                U[bCellID] + ( Ugrad[bCellID]
-              & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+                Up.boundaryFieldRef()[patchID][facei] =
+                    U_nei[facei] + ( Ugrad_nei[facei] & pDdeltaRRight[facei]);
 
-            Um.boundaryFieldRef()[patchID][facei] =
-                U[bCellID] + ( Ugrad[bCellID]
-              & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+                Um.boundaryFieldRef()[patchID][facei] =
+                    U[bCellID] + ( Ugrad[bCellID]& pDeltaRLeft[facei]);
 #else
-            U.boundaryField()[patchID][facei] =
-                U[bCellID]+ ( Ugrad[bCellID]
-             & ( mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+                Up.boundaryField()[patchID][facei] =
+                    U_nei[facei] + ( Ugrad_nei[facei]& pDdeltaRRight[facei]);
 
-            Um.boundaryField()[patchID][facei] =
-                U[bCellID]+ ( Ugrad[bCellID]
-             & ( mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+                Um.boundaryField()[patchID][facei] =
+                    U[bCellID] + ( Ugrad[bCellID]& pDeltaRLeft[facei]);
 #endif
+
+
+            }
+        }
+        else
+        {
+            forAll(mesh_.boundaryMesh()[patchID],facei)
+            {
+                const label& bCellID =
+                    mesh_.boundaryMesh()[patchID].faceCells()[facei];
+
+               //!this is a buge from original code
+                // U.boundaryFieldRef()[patchID][facei] =
+                //     U[bCellID] + ( Ugrad[bCellID]
+                // & (XF_.boundaryField()[patchID][facei] - X_[bCellID]));
+
+
+#ifdef OPENFOAM_NOT_EXTEND
+                Um.boundaryFieldRef()[patchID][facei] =
+                    U[bCellID] + ( Ugrad[bCellID]
+                & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+#else
+                Um.boundaryField()[patchID][facei] =
+                    U[bCellID] + ( Ugrad[bCellID]
+                & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+#endif
+            
+            
+            
+            }
         }
     }
 }
@@ -635,21 +696,67 @@ void gradientSchemes::reconstruct
         {
             continue;
         }
-
-        forAll(mesh_.boundaryMesh()[patchID], facei)
+        
+        else if (mesh_.boundary()[patchID].coupled())
         {
-            const label& bCellID =
-                mesh_.boundaryMesh()[patchID].faceCells()[facei];
+            const fvPatch& curPatch = mesh_.boundary()[patchID];
+            // distance between two cell centers accross coupled pathes
+            const vectorField pd = curPatch.delta();
+            // distance between the patch face center and its owner cell center 
+            vectorField pDeltaRLeft = curPatch.fvPatch::delta();
+            // distance between the patch face center and its neighbore cell center 
+            vectorField pDdeltaRRight = pDeltaRLeft - pd; 
+               
+            // tmp<vectorField> tmp_X_nei = X_.boundaryField()[patchID].patchNeighbourField();
+            // const vectorField& X_nei = tmp_X_nei();
+
+            tmp<vectorField> tmp_U_nei = U.boundaryField()[patchID].patchNeighbourField();
+            const vectorField& U_nei = tmp_U_nei();
+           
+            tmp<tensorField> tmp_Ugrad_nei = Ugrad.boundaryField()[patchID].patchNeighbourField();
+            const tensorField& Ugrad_nei = tmp_Ugrad_nei();
+
+            forAll(mesh_.boundary()[patchID], facei)
+            {
+                const label& bCellID =
+                    mesh_.boundaryMesh()[patchID].faceCells()[facei];
+
 
 #ifdef OPENFOAM_NOT_EXTEND
-            Um.boundaryFieldRef()[patchID][facei] =
-                U[bCellID] + (Ugrad[bCellID]
-              & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+                Up.boundaryFieldRef()[patchID][facei] =
+                    U_nei[facei] + ( Ugrad_nei[facei]& pDdeltaRRight[facei]);
+
+                Um.boundaryFieldRef()[patchID][facei] =
+                    U[bCellID] + ( Ugrad[bCellID]& pDeltaRLeft[facei]);
 #else
-            Um.boundaryField()[patchID][facei] =
-                U[bCellID]+ ( Ugrad[bCellID]
-             & ( mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
-#endif
+                Up.boundaryField()[patchID][facei] =
+                    U_nei[facei] + ( Ugrad_nei[facei]& pDdeltaRRight[facei]);
+
+                Um.boundaryField()[patchID][facei] =
+                    U[bCellID] + ( Ugrad[bCellID]& pDeltaRLeft[facei]);
+#endif            
+            
+            }
+        }
+        else
+        {
+            forAll(mesh_.boundaryMesh()[patchID], facei)
+            {
+                const label& bCellID =
+                    mesh_.boundaryMesh()[patchID].faceCells()[facei];
+
+
+#ifdef OPENFOAM_NOT_EXTEND
+                Um.boundaryFieldRef()[patchID][facei] =
+                    U[bCellID] + (Ugrad[bCellID]
+                & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+#else
+                Um.boundaryField()[patchID][facei] =
+                    U[bCellID] + (Ugrad[bCellID]
+                & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
+#endif                
+            
+            }
         }
     }
 }
@@ -733,6 +840,88 @@ void gradientSchemes::reconstruct
         {
             continue;
         }
+        
+ 
+        else if (mesh_.boundary()[patchID].coupled())
+        {
+
+                const fvPatch& curPatch = mesh_.boundary()[patchID];
+                // distance between two cell centers accross coupled pathes
+                const vectorField pd = curPatch.delta();
+                // distance between the patch face center and its owner cell center 
+                vectorField pDeltaRLeft = curPatch.fvPatch::delta();
+                // distance between the patch face center and its neighbore cell center 
+                vectorField pDdeltaRRight = pDeltaRLeft - pd;
+                               
+            // tmp<vectorField> tmp_X_nei = X_.boundaryField()[patchID].patchNeighbourField();
+            // const vectorField& X_nei = tmp_X_nei();
+
+            tmp<vectorField> tmp_Ux_nei = Ux.boundaryField()[patchID].patchNeighbourField();
+            const vectorField& Ux_nei = tmp_Ux_nei();
+
+            tmp<vectorField> tmp_Uy_nei = Uy.boundaryField()[patchID].patchNeighbourField();
+            const vectorField& Uy_nei = tmp_Uy_nei();
+            
+            tmp<vectorField> tmp_Uz_nei = Uz.boundaryField()[patchID].patchNeighbourField();
+            const vectorField& Uz_nei = tmp_Uz_nei();
+           
+            tmp<tensorField> tmp_Ugradx_nei = UxGrad.boundaryField()[patchID].patchNeighbourField();
+            const tensorField& UxGrad_nei = tmp_Ugradx_nei();
+           
+            tmp<tensorField> tmp_Ugrady_nei = UyGrad.boundaryField()[patchID].patchNeighbourField();
+            const tensorField& UyGrad_nei = tmp_Ugrady_nei();
+           
+            tmp<tensorField> tmp_Ugradz_nei = UzGrad.boundaryField()[patchID].patchNeighbourField();
+            const tensorField& UzGrad_nei = tmp_Ugradz_nei();
+
+            forAll(mesh_.boundary()[patchID], facei)
+            {
+                const label& bCellID =
+                    mesh_.boundaryMesh()[patchID].faceCells()[facei];
+
+
+                const vector& reconsX_nei =
+                    Ux_nei[facei] + (UxGrad_nei[facei] & pDdeltaRRight[facei]);
+
+                const vector& reconsY_nei =
+                    Uy_nei[facei] + (UyGrad_nei[facei] & pDdeltaRRight[facei]);
+
+                const vector& reconsZ_nei =
+                    Uz_nei[facei] + (UzGrad_nei[facei] & pDdeltaRRight[facei]);
+
+
+#ifdef OPENFOAM_NOT_EXTEND
+
+                Up.boundaryFieldRef()[patchID][facei] =
+                    tensor(reconsX_nei, reconsY_nei, reconsZ_nei);
+#else
+
+                Up.boundaryField()[patchID][facei] =
+                    tensor(reconsX_nei, reconsY_nei, reconsZ_nei);
+#endif  
+                //-----------------------------------------------------
+                const vector& reconsX =
+                    Ux[bCellID] + (UxGrad[bCellID] & pDeltaRLeft[facei]);
+
+                const vector& reconsY =
+                    Uy[bCellID] + (UyGrad[bCellID] & pDeltaRLeft[facei]);
+
+                const vector& reconsZ =
+                    Uz[bCellID] + (UzGrad[bCellID] & pDeltaRLeft[facei]);
+
+                // U.boundaryFieldRef()[patchID][facei] =
+                //     tensor(reconsX, reconsY, reconsZ);
+
+#ifdef OPENFOAM_NOT_EXTEND
+                Um.boundaryFieldRef()[patchID][facei] =
+                    tensor(reconsX, reconsY, reconsZ);
+#else
+                Um.boundaryField()[patchID][facei] =
+                    tensor(reconsX, reconsY, reconsZ);
+#endif  
+                
+            }
+        }
 
         forAll(mesh_.boundaryMesh()[patchID], facei)
         {
@@ -751,19 +940,16 @@ void gradientSchemes::reconstruct
                 Uz[bCellID] + (UzGrad[bCellID]
               & (mesh_.Cf().boundaryField()[patchID][facei] - mesh_.C()[bCellID]));
 
-#ifdef OPENFOAM_NOT_EXTEND
-            U.boundaryFieldRef()[patchID][facei] =
-                tensor(reconsX, reconsY, reconsZ);
+            // U.boundaryFieldRef()[patchID][facei] =
+            //     tensor(reconsX, reconsY, reconsZ);
 
+#ifdef OPENFOAM_NOT_EXTEND
             Um.boundaryFieldRef()[patchID][facei] =
                 tensor(reconsX, reconsY, reconsZ);
 #else
-            U.boundaryField()[patchID][facei] =
-                tensor(reconsX, reconsY, reconsZ);
-
             Um.boundaryField()[patchID][facei] =
                 tensor(reconsX, reconsY, reconsZ);
-#endif
+#endif 
         }
     }
 

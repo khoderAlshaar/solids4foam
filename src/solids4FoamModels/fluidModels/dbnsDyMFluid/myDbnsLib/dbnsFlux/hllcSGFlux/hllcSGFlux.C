@@ -24,34 +24,26 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "hllcSGFlux.H"
-#include "addToRunTimeSelectionTable.H"
-namespace Foam
-{
-    defineTypeNameAndDebug(hllcSGFlux, 0);
-    addToRunTimeSelectionTable(dbnsFlux, hllcSGFlux, dictionary);
-}
-
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 void Foam::hllcSGFlux::evaluateFlux
 (
-        scalar& rhoFlux,
-        vector& rhoUFlux,
-        scalar& rhoEFlux,
-        const scalar& pLeft,
-        const scalar& pRight,
-        const vector& ULeft,
-        const vector& URight,
-        const scalar& TLeft,
-        const scalar& TRight,
-        const scalar& RLeft,
-        const scalar& RRight,
-        const scalar& CvLeft,
-        const scalar& CvRight,
-        const vector& Sf,
-        const scalar& magSf,
-        const scalar& meshPhi
+    scalar& rhoFlux,
+    vector& rhoUFlux,
+    scalar& rhoEFlux,
+    const scalar& pLeft,
+    const scalar& pRight,
+    const vector& ULeft,
+    const vector& URight,
+    const scalar& TLeft,
+    const scalar& TRight,
+    const scalar& q,
+    const scalar& pinf,
+    const scalar& gamma,
+    const scalar& Cv,
+    const vector& Sf,
+    const scalar& magSf
 ) const
 {
 

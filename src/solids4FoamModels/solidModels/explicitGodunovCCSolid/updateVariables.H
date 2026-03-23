@@ -30,3 +30,16 @@ model_.correct();
 P_ = model_.piola();
 
 flux().computeFlux();
+
+ lmC_ = rho_ * (flux().FFlux() & N_) ;
+
+//  Info<<"N_= "<<N_<<endl;
+
+lmR_ = interpolate_.surfaceToVol(lmC_);
+lmRgrad_ = grad_.localGradient(lmR_, lmC_);
+interpolate_.volToPoint(lmR_, lmRgrad_, lmN_);
+#include "strongBCs.H"
+lmN_.correctBoundaryConditions();
+// // //step d
+// // // Constrained fluxes
+lmC_ = interpolate_.pointToSurface(lmN_);

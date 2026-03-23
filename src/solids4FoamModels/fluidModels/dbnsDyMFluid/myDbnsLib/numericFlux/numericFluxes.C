@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     4.1
+   \\    /   O peration     | Version:     5.0
     \\  /    A nd           | Web:         http://www.foam-extend.org
      \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
@@ -25,15 +25,27 @@ License
 
 #include "makeBasicNumericFlux.H"
 
-#include "rusanovFlux.H"
-#include "roeFlux.H"
-#include "betaFlux.H"
-#include "hllcFlux.H"
-#include "hllcALEFlux.H"
+// #include "hllcSGFlux.H"
+// #include "hllcLMSGFlux.H"
+// #include "SGL2RoeFlux.H"
+// #include "SGThornberRoeFlux.H"
+
+#include "hllcSGLMFlux.H"
+#include "hllcSGLMALEFlux.H"
+#include "hllcSGALEFlux.H"
+#include "SGL2RoeFlux.H"
+#include "SGL2RoeALEFlux.H"
+
 
 #include "firstOrderLimiter.H"
 #include "BarthJespersenLimiter.H"
 #include "VenkatakrishnanLimiter.H"
+// #include "MinmodLimiter.H"
+// #include "SuperbeeLimiter.H"
+// #include "VanAlbadaLimiter.H"
+// #include "WangLimiter.H"
+// #include "MichalakGoochLimiter.H"
+// #include "UnlimitedLimiter.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -45,12 +57,26 @@ namespace Foam
 #define makeBasicNumericFluxForAllLimiters(Flux)                              \
 makeBasicNumericFlux(Flux, firstOrderLimiter);                                \
 makeBasicNumericFlux(Flux, BarthJespersenLimiter);                            \
-makeBasicNumericFlux(Flux, VenkatakrishnanLimiter);
+makeBasicNumericFlux(Flux, VenkatakrishnanLimiter);                       \
 
-makeBasicNumericFluxForAllLimiters(rusanovFlux);
-makeBasicNumericFluxForAllLimiters(betaFlux);
-makeBasicNumericFluxForAllLimiters(roeFlux);
-makeBasicNumericFluxForAllLimiters(hllcFlux);
+
+// makeBasicNumericFluxSG(Flux, SuperbeeLimiter);                                  \
+// makeBasicNumericFluxSG(Flux, VanAlbadaLimiter);                                 \
+// makeBasicNumericFluxSG(Flux, VanLeerLimiter);                                 \
+// makeBasicNumericFluxSG(Flux, MinmodLimiter);                                    \
+// makeBasicNumericFluxSG(Flux, WangLimiter);                                    \
+// makeBasicNumericFluxSG(Flux, MichalakGoochLimiter);                             \
+// makeBasicNumericFluxSG(Flux, UnlimitedLimiter);                             \
+// makeBasicNumericFlux(Flux, BarthJespersenNewLimiter);                           \
+
+
+// makeBasicNumericFluxForAllLimiters(hllcSGFlux);
+makeBasicNumericFluxForAllLimiters(hllcSGLMFlux);
+makeBasicNumericFluxForAllLimiters(hllcSGLMALEFlux);
+makeBasicNumericFluxForAllLimiters(hllcSGALEFlux);
+makeBasicNumericFluxForAllLimiters(SGL2RoeFlux);
+makeBasicNumericFluxForAllLimiters(SGL2RoeALEFlux);
+// makeBasicNumericFluxForAllLimiters(SGThornberRoeFlux);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

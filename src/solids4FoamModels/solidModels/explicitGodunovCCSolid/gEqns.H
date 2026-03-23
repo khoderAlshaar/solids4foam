@@ -18,7 +18,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 // Compute right hand sides
-rhsLm_ = fvc::surfaceIntegrate(flux().lmFlux());
+rhsLm_ = fvc::surfaceIntegrate(flux().lmFlux()*mesh().magSf());
 
 //! angula momentum required to be updated to consider  dual time step?
 // if (angularMomentumConservation_ == "yes")
@@ -48,7 +48,7 @@ if (runTime_.timeIndex() == 0)
     lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (lm_- lm_.oldTime())/(deltaT_));
     lm_ -= pDeltaT_*dampingCoeff()*lm_;
 
-    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux()) - pDeltaT_*( (F_ - F_.oldTime())/(deltaT_)) ;
+    F_ += pDeltaT_*fvc::surfaceIntegrate((lmC_/rho_)*mesh().Sf()) - pDeltaT_*( (F_ - F_.oldTime())/(deltaT_)) ;
 }
 
 else
@@ -58,5 +58,15 @@ else
     lm_ += pDeltaT_*rhsLm_ - pDeltaT_*( (3*lm_ - 4*lm_.oldTime() + lm_.oldTime().oldTime())/(2*deltaT_));
     lm_ -= pDeltaT_*dampingCoeff()*lm_;
 
-    F_ += pDeltaT_*fvc::surfaceIntegrate(flux().FFlux())  - pDeltaT_*( (3*F_ - 4*F_.oldTime() + F_.oldTime().oldTime())/(2*deltaT_));
+    F_ += pDeltaT_*fvc::surfaceIntegrate((lmC_/rho_)*mesh().Sf())  - pDeltaT_*( (3*F_ - 4*F_.oldTime() + F_.oldTime().oldTime())/(2*deltaT_));
 }
+
+// x_ += deltaT_*(lm_/rho_);
+// xF_ += deltaT_*(lmC_/rho_);
+// xN_ += deltaT_*(lmN_/rho_);
+
+// lm_ += deltaT_*rhsLm_ ;//- deltaT*dampingCoeff*lm;
+// lm_ -= deltaT_*dampingCoeff()*lm_ ;
+
+// // F += deltaT*fvc::surfaceIntegrate(flux_F*magSf);
+// F_ += deltaT_*fvc::surfaceIntegrate((lmC_/rho_)*mesh().Sf());

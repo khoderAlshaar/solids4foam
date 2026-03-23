@@ -19,6 +19,7 @@ License
 
 
 #include "interpolationSchemes.H"
+#include "coupledPointPatchFields.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -38,7 +39,15 @@ interpolationSchemes::interpolationSchemes(const fvMesh& vm)
     own_(mesh_.owner()),
     X_(mesh_.C()),
     XF_(mesh_.Cf()),
-    XN_(mesh_.points())
+    XN_(mesh_.points())//,
+    // vpi 
+    // (
+    //     volPointInterpolation::New(mesh_)
+    // )
+    // vpi 
+    // (
+    //    mesh_
+    // )
 {}
 
 
@@ -164,6 +173,7 @@ volVectorField interpolationSchemes::surfaceToVol
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 #ifdef OPENFOAM_NOT_EXTEND
 
 template<class Type>
@@ -214,8 +224,15 @@ void interpolationSchemes::addSeparated
     typename GeometricField<Type, pointPatchField, pointMesh>::
         Internal& pfi = pf.ref();
 
+
+
+#ifdef OPENFOAM_NOT_EXTEND
     typename GeometricField<Type, pointPatchField, pointMesh>::
         Boundary& pfbf = pf.boundaryFieldRef();
+#else
+    typename GeometricField<Type, pointPatchField, pointMesh>::
+        Boundary& pfbf = pf.boundaryField();
+#endif
 
     forAll(pfbf, patchi)
     {
@@ -247,6 +264,8 @@ void interpolationSchemes::addSeparated
 }
 
 #endif
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void interpolationSchemes::volToPoint
@@ -257,8 +276,8 @@ void interpolationSchemes::volToPoint
 ) const
 {
 
-    const fvMesh& mesh = mesh_;
-    const volVectorField& C = mesh.C();
+    // const fvMesh& mesh = mesh_;
+    // const volVectorField& C = mesh.C();
 
 #ifdef OPENFOAM_NOT_EXTEND
     if( Pstream::parRun() )
@@ -268,28 +287,31 @@ void interpolationSchemes::volToPoint
             IOobject
             (
                 "volPointSum",
-                mesh.polyMesh::instance(),
+                mesh_.polyMesh::instance(),
                 mesh
             ),
             pointMesh::New(mesh),
             dimensionedScalar("zero", dimless, 0.0)
         );
 
-        forAll (mesh.points(), nodeID)
+        forAll (mesh_.points(), nodeID)
         {
             Un[nodeID] = vector::zero;
         }
 
-        forAll (mesh.points(), nodeID)
+        forAll (mesh_.points(), nodeID)
         {
-            forAll (mesh.pointCells()[nodeID], cell)
+            forAll (mesh_.pointCells()[nodeID], cell)
             {
-                const label& cellID = mesh.pointCells()[nodeID][cell];
-                const vector& d = mesh.points()[nodeID] - C[cellID];
+                const label& cellID = mesh_.pointCells()[nodeID][cell];
+                const vector& d = mesh_.points()[nodeID] - mesh_.C()[cellID];
                 const vector& recons = U[cellID] + ( Ugrad[cellID] & d );
-                const scalar& weight = 1;
+                // const scalar& weight = 1;
+                const scalar& weight = 1.0/(mag(d) + SMALL);
+                // const scalar& w = mesh_.V()[cellID] / (magSqr(d) + SMALL);
 
-                Un[nodeID] += recons;
+
+                Un[nodeID] += recons * (weight);
                 sum[nodeID] += weight;
             }
         }
@@ -298,7 +320,7 @@ void interpolationSchemes::volToPoint
         addSeparated(sum);
         pushUntransformedData(sum);
 
-        forAll (mesh.points(), nodeID)
+        forAll (mesh_.points(), nodeID)
         {
             Un[nodeID] = Un[nodeID] / sum[nodeID];
         }
@@ -310,29 +332,63 @@ void interpolationSchemes::volToPoint
 
     else
     {
-#endif
-        forAll (mesh.pointCells(), nodeID)
+        forAll (mesh_.pointCells(), nodeID)
         {
             vector sum = vector::zero;
             scalar weights = 0.0;
 
-            forAll (mesh.pointCells()[nodeID], cell)
+            forAll (mesh_.pointCells()[nodeID], cell)
             {
-                const label& cellID = mesh.pointCells()[nodeID][cell];
-                const vector& d = mesh.points()[nodeID] - C[cellID];
+                const label& cellID = mesh_.pointCells()[nodeID][cell];
+                const vector& d = mesh_.points()[nodeID] - mesh_C()[cellID];
                 const vector& recons = U[cellID] + ( Ugrad[cellID] & d );
 
-                //sum += recons * (1.0/mag(d));
-                //weights += (1.0/mag(d));
+                sum += recons * (1.0/mag(d));
+                weights += 1.0/(mag(d) + SMALL);
 
-                sum += recons;
-                weights += 1.0;
+                // sum += recons;
+                // weights += 1.0;
             }
 
             Un[nodeID] = sum / weights;
         }
-#ifdef OPENFOAM_NOT_EXTEND        
+       
     }
+#else
+    // if( Pstream::parRun() )
+    // {
+    //     // vpi.interpolate(U, Un);
+    //     Un = vpi.interpolate(U);
+
+    // }
+    // else
+    // {
+            //! check for accuracy with lazzy interpolation
+            //! is it neccessary to reconstruct first?
+        forAll (mesh_.pointCells(), nodeID)
+        {
+            vector sum = vector::zero;
+            scalar weights = 0.0;
+
+            forAll (mesh_.pointCells()[nodeID], cell)
+            {
+                const label& cellID = mesh_.pointCells()[nodeID][cell];
+                const vector& d = mesh_.points()[nodeID] - mesh_.C()[cellID];
+                const vector& recons = U[cellID] + ( Ugrad[cellID] & d );
+
+                sum += recons * (1.0/mag(d));
+                weights += 1.0/(mag(d) + SMALL);
+
+                // sum += recons;
+                // weights += 1.0;
+            }
+
+            Un[nodeID] = sum / weights;
+        }
+
+    // }
+
+
 #endif
 }
 
@@ -344,7 +400,7 @@ surfaceVectorField interpolationSchemes::pointToSurface
     const GeometricField<vector, pointPatchField, pointMesh>& U
 ) const
 {
-    // vector d = vector::zero;
+    vector d = vector::zero;
     vector sum = vector::zero;
     scalar weights = 0.0;
 
@@ -374,11 +430,11 @@ surfaceVectorField interpolationSchemes::pointToSurface
         forAll(mesh_.faces()[faceID], node)
         {
             const label& nodeID = mesh_.faces()[faceID][node];
-            // d = mesh_.points()[nodeID] - mesh_.Cf()[faceID];
-            // sum += U[nodeID]*(1.0/mag(d));
-            // weights += 1.0/mag(d);
-            sum += U[nodeID];
-            weights += 1.0;
+            d = mesh_.points()[nodeID] - mesh_.Cf()[faceID];
+            sum += U[nodeID]*(1.0/(mag(d) + SMALL));
+            weights += 1.0/(mag(d) + SMALL);
+            // sum += U[nodeID];
+            // weights += 1.0;
         }
 
         Uf[faceID] = sum/weights;
@@ -395,18 +451,18 @@ surfaceVectorField interpolationSchemes::pointToSurface
             forAll(mesh_.faces()[faceID], node)
             {
                 const label& nodeID = mesh_.faces()[faceID][node];
-                // d = mesh_.points()[nodeID] - mesh_.Cf().boundaryField()[patchID][facei];
-                // sum += U[nodeID]*(1.0/mag(d));
-                // weights += 1.0/mag(d);
-                sum += U[nodeID];
-                weights += 1.0;
+                d = mesh_.points()[nodeID] - mesh_.Cf().boundaryField()[patchID][facei];
+                sum += U[nodeID]*(1.0/mag(d));
+                weights += 1.0/(mag(d) + SMALL);
+                // sum += U[nodeID];
+                // weights += 1.0;
             }
+
 
 #ifdef OPENFOAM_NOT_EXTEND
             Uf.boundaryFieldRef()[patchID][facei] = sum/weights;
 #else
             Uf.boundaryField()[patchID][facei] = sum/weights;
-
 #endif
         }
     }
