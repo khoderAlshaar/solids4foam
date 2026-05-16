@@ -36,8 +36,11 @@ Author
 #ifndef MDLimiter_H
 #define MDLimiter_H
 
-#include "volFieldsFwd.H"
-#include "surfaceFieldsFwd.H"
+// #include "volFieldsFwd.H"
+// #include "surfaceFieldsFwd.H"
+// #include "surfaceFieldsFwd.H"
+#include "volFields.H"
+#include "surfaceFields.H"
 #include "BarthJespersenLimiter.H"
 #include "VenkatakrishnanLimiter.H"
 
@@ -129,11 +132,11 @@ public:
                 phi
             );
 
-            const unallocLabelList& owner = mesh_.owner();
-            const unallocLabelList& neighbour = mesh_.neighbour();
+            const auto& owner = mesh_.owner();
+            const auto& neighbour = mesh_.neighbour();
 
-            Field<Type>& phiMinIn = phiMinValue.internalField();
-            Field<Type>& phiMaxIn = phiMaxValue.internalField();
+            // Field<Type>& phiMinIn = phiMinValue.internalFieldRef();
+            // Field<Type>& phiMaxIn = phiMaxValue.internalFieldRef();
 
             forAll (owner, faceI)
             {
@@ -141,12 +144,12 @@ public:
                 const label& nei = neighbour[faceI];
 
                 // min values
-                phiMinIn[own] = min(phiMinIn[own], phi_[nei]);
-                phiMinIn[nei] = min(phiMinIn[nei], phi_[own]);
+                phiMinValue[own] = min(phiMinValue[own], phi_[nei]);
+                phiMinValue[nei] = min(phiMinValue[nei], phi_[own]);
 
                 // max values
-                phiMaxIn[own] = max(phiMaxIn[own], phi_[nei]);
-                phiMaxIn[nei] = max(phiMaxIn[nei], phi_[own]);
+                phiMaxValue[own] = max(phiMaxValue[own], phi_[nei]);
+                phiMaxValue[nei] = max(phiMaxValue[nei], phi_[own]);
             }
 
             // Coupled boundaries
@@ -165,16 +168,18 @@ public:
                         const label& curFC = fc[faceI];
 
                         // min value
-                        phiMinIn[curFC] =
-                            min(phiMinIn[curFC], pNei[faceI]);
+                        phiMinValue[curFC] =
+                            min(phiMinValue[curFC], pNei[faceI]);
 
                         // max value
-                        phiMaxIn[curFC] =
-                            max(phiMaxIn[curFC], pNei[faceI]);
+                        phiMaxValue[curFC] =
+                            max(phiMaxValue[curFC], pNei[faceI]);
                     }
                 }
             }
-
+            
+            phiMinValue.correctBoundaryConditions();
+            phiMaxValue.correctBoundaryConditions();
             // Calculate limiter
 
             // Get geometrical information
@@ -186,7 +191,7 @@ public:
             // Create limiter function
             LimiterFunctionType limitFunction;
 
-            FieldType& phiLimiterIn = phiLimiter_.internalField();
+            // FieldType& phiLimiterIn = phiLimiter_.internalField();
 
             const GradFieldType& gradPhiIn = gradPhi.internalField();
 
@@ -204,20 +209,20 @@ public:
                 // Owner side
                 limitFunction.limiter
                 (
-                    phiLimiterIn[own],
+                    phiLimiter_[own],
                     cellVolume[own],
-                    phiMaxIn[own] - phi_[own],
-                    phiMinIn[own] - phi_[own],
+                    phiMaxValue[own] - phi_[own],
+                    phiMinValue[own] - phi_[own],
                     (deltaRLeft & gradPhiIn[own])
                 );
 
                 // Neighbour side
                 limitFunction.limiter
                 (
-                    phiLimiterIn[nei],
+                    phiLimiter_[nei],
                     cellVolume[nei],
-                    phiMaxIn[nei] - phi_[nei],
-                    phiMinIn[nei] - phi_[nei],
+                    phiMaxValue[nei] - phi_[nei],
+                    phiMinValue[nei] - phi_[nei],
                     (deltaRRight & gradPhiIn[nei])
                 );
             }
@@ -251,10 +256,10 @@ public:
 
                         limitFunction.limiter
                         (
-                            phiLimiterIn[curFC],
+                            phiLimiter_[curFC],
                             cellVolume[curFC],
-                            phiMaxIn[curFC] - phi_[curFC],
-                            phiMinIn[curFC] - phi_[curFC],
+                            phiMaxValue[curFC] - phi_[curFC],
+                            phiMinValue[curFC] - phi_[curFC],
                             (deltaR[faceI] & gradPhiLeft[faceI])
                         );
                     }

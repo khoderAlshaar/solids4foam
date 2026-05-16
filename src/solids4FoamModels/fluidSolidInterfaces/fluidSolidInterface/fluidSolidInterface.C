@@ -748,7 +748,7 @@ void Foam::fluidSolidInterface::moveFluidMesh()
 {
     // Get fluid patch displacement from fluid zone displacement
     // Take care: these are local patch fields not global patch fields
-
+    Info<< "moveFluidMesh() is called"<<endl;
     List<vectorField> fluidPatchesPointsDispls
     (
         nGlobalPatches_, vectorField()
@@ -1077,7 +1077,7 @@ void Foam::fluidSolidInterface::moveFluidMesh()
         bool meshChanged = fluidMesh().update();
         reduce(meshChanged, orOp<bool>());
         fluid().fsiMeshUpdate() = true;
-        fluid().fsiMeshUpdateChanged() = meshChanged;
+        fluid().fsiMeshUpdateChanged() = meshChanged; //! for sime reason this one is not updating to true
 
         forAll(fluid().globalPatches(), interfaceI)
         {

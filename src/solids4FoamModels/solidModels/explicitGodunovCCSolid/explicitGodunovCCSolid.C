@@ -380,12 +380,15 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
      lmR_(interpolate_.surfaceToVol(lmC_)),
 
     // Local gradient of cell averaged linear momentum
-    lmRgrad_(grad_.localGradient(lmR_, lmC_))
+    lmRgrad_(grad_.localGradient(lmR_, lmC_)),
+
+    solidConv_(runTime, mesh())
 
 {
 
 
-    
+    solidConv_.read(mesh().solutionDict());
+
     Info << "Reading data from dictionaries ..." << endl;
     if
     (
@@ -445,6 +448,8 @@ explicitGodunovCCSolid::explicitGodunovCCSolid
     Info<< "Frequency at which info is printed: every " << infoFrequency()
         << " time-steps" << endl;
 
+        
+
 }
 
 
@@ -463,7 +468,7 @@ Foam::solidNumericFlux& explicitGodunovCCSolid::flux()
 
 bool explicitGodunovCCSolid::evolve()
 {
-    Info<< "starting of evolve function New explicite" << endl;
+    Info<< "starting of evolve function" << endl;
     // Mesh update loop
     do
     {
@@ -486,6 +491,7 @@ bool explicitGodunovCCSolid::evolve()
             F_.storePrevIter();
             lm_.storePrevIter();
             xN_.storePrevIter();
+            P_.storePrevIter();
 
             mech_.time(runTime_, pDeltaT_, max(Up_time_));
 
@@ -511,19 +517,24 @@ bool explicitGodunovCCSolid::evolve()
 
             #include "updateVariables.H"
 
-            pointD() = xN_ - XN_;
 
+        // }
+        // while
+        // (
+        //     !converged
+        //         (
+        //             iCorr,
+        //             pDeltaT_,
+        //             lm_
+        //         )
+        //  && ++iCorr < nCorr()
+        // );
+                    ++iCorr;
         }
-        while
-        (
-            !converged
-                (
-                    iCorr,
-                    pDeltaT_,
-                    lm_
-                )
-         && ++iCorr < nCorr()
-        );
+        while (!solidConv_.pseudoConverged(iCorr, pDeltaT_, lm_, P_, xN_));
+
+
+        pointD() = xN_ - XN_;
 
         // Update the stress field based on the latest D field
         sigma() =  symm((1.0/J_)*(P_ & F_.T()));

@@ -59,6 +59,7 @@ SourceFiles
 #include "angularMomentum.H"
 // #include "numericalFlux.H"
 #include "solidNumericFlux.H"
+#include "SolidConvergenceControl.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -226,6 +227,9 @@ class explicitGodunovCCSolid
 
     // Local gradient of cell averaged linear momentum
     volTensorField lmRgrad_;
+
+    SolidConvergenceControl solidConv_;
+
 
     // Private Member Functions
 

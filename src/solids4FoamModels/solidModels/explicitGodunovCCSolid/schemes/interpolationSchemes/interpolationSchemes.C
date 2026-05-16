@@ -129,33 +129,33 @@ volVectorField interpolationSchemes::surfaceToVol
 
             const objectRegistry& db = mesh_.thisDb();
 
-            const pointVectorField& lmN_ =
-                db.lookupObject<pointVectorField> ("lmN");
+            // const pointVectorField& lmN_ =
+            //     db.lookupObject<pointVectorField> ("lmN");
 
-            if (lmN_.boundaryField().types()[patchID] == "fixedValue")
-            {
-                const label& faceID =
-                    mesh_.boundary()[patchID].patch().start() + facei;
+            // if (lmN_.boundaryField().types()[patchID] == "fixedValue")
+            // {
+            //     const label& faceID =
+            //         mesh_.boundary()[patchID].patch().start() + facei;
 
-                forAll(mesh_.faces()[faceID], nodei)
-                {
-                    const label& nodeID = mesh_.faces()[faceID][nodei];
-                    d = mesh_.points()[nodeID] - mesh_.C()[bCellID];
-                    U[bCellID] += lmN_[nodeID] * (1.0/mag(d));
-                    w[bCellID] += (1.0/mag(d));
+            //     forAll(mesh_.faces()[faceID], nodei)
+            //     {
+            //         const label& nodeID = mesh_.faces()[faceID][nodei];
+            //         d = mesh_.points()[nodeID] - mesh_.C()[bCellID];
+            //         U[bCellID] += lmN_[nodeID] * (1.0/mag(d));
+            //         w[bCellID] += (1.0/mag(d));
 
-                    for (int i=0; i<7; i++)
-                    {
-                        d =
-                            ((((i+1)*mesh_.points()[nodeID])
-                          + ((7-i)*mesh_.Cf().boundaryField()[patchID][facei]) )/8.0)
-                          - mesh_.C()[bCellID];
+            //         for (int i=0; i<7; i++)
+            //         {
+            //             d =
+            //                 ((((i+1)*mesh_.points()[nodeID])
+            //               + ((7-i)*mesh_.Cf().boundaryField()[patchID][facei]) )/8.0)
+            //               - mesh_.C()[bCellID];
 
-                        U[bCellID] += lmN_[nodeID] * (1.0/mag(d));
-                        w[bCellID] += 1.0/mag(d);
-                    }
-                }
-            }
+            //             U[bCellID] += lmN_[nodeID] * (1.0/mag(d));
+            //             w[bCellID] += 1.0/mag(d);
+            //         }
+            //     }
+            // }
         }
     }
 
@@ -363,6 +363,8 @@ void interpolationSchemes::volToPoint
     // }
     // else
     // {
+        vector d = vector::zero;
+
             //! check for accuracy with lazzy interpolation
             //! is it neccessary to reconstruct first?
         forAll (mesh_.pointCells(), nodeID)
@@ -373,10 +375,11 @@ void interpolationSchemes::volToPoint
             forAll (mesh_.pointCells()[nodeID], cell)
             {
                 const label& cellID = mesh_.pointCells()[nodeID][cell];
-                const vector& d = mesh_.points()[nodeID] - mesh_.C()[cellID];
+                d = mesh_.points()[nodeID] - mesh_.C()[cellID];
+
                 const vector& recons = U[cellID] + ( Ugrad[cellID] & d );
 
-                sum += recons * (1.0/mag(d));
+                sum += recons * 1.0/(mag(d) + SMALL);
                 weights += 1.0/(mag(d) + SMALL);
 
                 // sum += recons;

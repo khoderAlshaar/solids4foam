@@ -1,4 +1,0 @@
-myTurbulenceModel.C
-laminar/laminar.C
-
-LIB = $(FOAM_USER_LIBBIN)/libmyCompressibleTurbulenceModel

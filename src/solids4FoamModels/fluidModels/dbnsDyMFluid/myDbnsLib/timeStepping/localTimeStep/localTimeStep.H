@@ -44,6 +44,13 @@ SourceFiles
 #include "basicThermo.H"
 #include "myTurbulenceModel.H"
 
+
+#include "volFieldsFwd.H"
+#include "surfaceFieldsFwd.H"
+#include "volFields.H"
+#include "surfaceFields.H"
+#include "pointFields.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -74,10 +81,9 @@ class localTimeStep
 
        //- CFL number limited local time step field
        volScalarField CoDeltaT_;
+    //    volScalarField deltaTInvis_;
+       
 
-        // scalar pInf;
-        // scalar pInf_;
-         dimensionedScalar pInf;
 
 
     // Private Member Functions

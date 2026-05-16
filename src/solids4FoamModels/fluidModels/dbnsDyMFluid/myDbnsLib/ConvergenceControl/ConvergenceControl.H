@@ -8,8 +8,7 @@ class ConvergenceControl
 private:
 
     const Time& runTime_;
-    const fvMesh& mesh_; 
-
+    const fvMesh& mesh_;
 
     // -------- pseudo-time parameters --------
     label  pseudoMaxIters_;
@@ -17,7 +16,7 @@ private:
     scalar pseudoRelTol_;
     scalar pseudoStagnationTol_;
     label  pseudoStagnationLimit_;
-    int infoFrequency_;
+    int    infoFrequency_;
 
     // internal tracking
     scalar initialPseudoResidual_;
@@ -31,44 +30,74 @@ private:
     // counter
     label physicalTolCounter_;
 
-    // -------- On-the-fly residual log files --------
-    OFstream pseudoFile_;
-    OFstream physicalFile_;
+    // -------- Residual output files --------
+    autoPtr<OFstream> pseudoFilePtr_;
+    autoPtr<OFstream> physicalFilePtr_;
 
-        word solverType_;   
+    // Solver type (MSMS, MSSS, SSSS)
+    word solverType_;
 
 public:
 
     // Constructor
-    ConvergenceControl(const Time& runTime, const fvMesh& mesh );
+    ConvergenceControl(const Time& runTime, const fvMesh& mesh);
 
     // Read from dictionary
     void read(const dictionary& dict);
 
+    // =======================
     // Convergence checks
-    bool pseudoConverged(int iter,
-                         const dimensionedScalar& dtPseudo,
-                         const volScalarField& rho,
-                         const volVectorField& rhoU,
-                         const volScalarField& rhoE);
+    // =======================
+    bool pseudoConverged
+    (
+        int iter,
+        const dimensionedScalar& dtPseudo,
+        const volScalarField& rho,
+        const volVectorField& rhoU,
+        const volScalarField& rhoE
+    );
 
-    bool physicalConverged(const volScalarField& rho,
-                           const volVectorField& rhoU,
-                           const volScalarField& rhoE);
+    bool physicalConverged
+    (
+        const volScalarField& rho,
+        const volVectorField& rhoU,
+        const volScalarField& rhoE
+    );
 
-    // appenders
-    void appendPseudoResidual(int iter, scalar res);
-    void appendPhysicalResidual(scalar dR, scalar dRU, scalar dRE);
+    // =======================
+    // Residual writers
+    // =======================
 
-    // getter
-    inline label& pseudoMaxIters()  
+    // Pseudo residual (inner iterations)
+    void appendPseudoResidual
+    (
+        int iter,
+        scalar res,
+        scalar rhoRes,
+        scalar rhoURes,
+        scalar rhoERes
+    );
+
+    // Physical residual (outer iterations / time)
+    void appendPhysicalResidual
+    (
+        scalar dR,
+        scalar dRU,
+        scalar dRE
+    );
+
+    // =======================
+    // Getters
+    // =======================
+
+    inline label& pseudoMaxIters()
     {
-         return pseudoMaxIters_; 
+        return pseudoMaxIters_;
     }
-    
-    inline word& solverType()  
+
+    inline word& solverType()
     {
-         return solverType_; 
+        return solverType_;
     }
 };
 

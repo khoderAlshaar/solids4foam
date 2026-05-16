@@ -1,31 +1,34 @@
 /*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     5.0
-    \\  /    A nd           | Web:         http://www.foam-extend.org
-     \\/     M anipulation  | For copyright notice see file Copyright
--------------------------------------------------------------------------------
-License
-    This file is part of foam-extend.
+  L2-Roe low-dissipation Roe flux for low Mach numbers
+  Implementation based on Oßwald et al. (2016) and Rieper (2011).
 
-    foam-extend is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation, either version 3 of the License, or (at your
-    option) any later version.
+  Key corrections:
+  - Local Mach number based on max(ML, MR), not Roe-averaged velocity
+  - Scaling applied to velocity jumps in wave strength computation
+  - Shock switch properly applied to both normal and tangential components
+  - Physical flux evaluation unchanged
+\*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*\
+  LMRoe - Low Mach number fix for Roe's approximate Riemann solver
+  Implementation based on Rieper (2011) "A low-Mach number fix for Roe's 
+  approximate Riemann solver", Journal of Computational Physics 230 (2011).
 
-    foam-extend is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
-
+  Key differences from L2Roe:
+  - Only the normal velocity jump is scaled by the local Mach number
+  - Tangential velocity jumps remain UNSCALED
+  - This is sufficient to fix the low Mach accuracy problem
+  - L2Roe additionally scales tangential jumps to reduce dissipation
+    at high wavenumbers (relevant for LES/DES)
 \*---------------------------------------------------------------------------*/
 
 #include "SGL2RoeFlux.H"
+#include "addToRunTimeSelectionTable.H"
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+namespace Foam
+{
+    defineTypeNameAndDebug(SGL2RoeFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, SGL2RoeFlux, dictionary);
+}
 
 void Foam::SGL2RoeFlux::evaluateFlux
 (
@@ -38,18 +41,19 @@ void Foam::SGL2RoeFlux::evaluateFlux
     const vector& URight,
     const scalar& TLeft,
     const scalar& TRight,
-    const scalar& q,
-    const scalar& pinf,
-    const scalar& gamma,
-    const scalar& Cv,
+    const scalar& RLeft,
+    const scalar& RRight,
+    const scalar& CvLeft,
+    const scalar& CvRight,
     const vector& Sf,
     const scalar& magSf,
     const scalar& meshPhi,
+    const tensor& R,
+    const tensor& RTranspos,
     const scalar& fp1Left,
     const scalar& fp1Right
 ) const
 {
-
     // Step 1: decode left and right:
     // normal vector
     const vector normalVector = Sf/magSf;

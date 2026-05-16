@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     5.0
+   \\    /   O peration     | Version:     3.2
     \\  /    A nd           | Web:         http://www.foam-extend.org
      \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
@@ -21,21 +21,16 @@ License
     You should have received a copy of the GNU General Public License
     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
 
-Application
+Class
     SGL2RoeALEFlux
 
 Description
-    HLLC flux class, computes numerical fluxes based on HLLC scheme. Uses
-    primitive variables as input and gives back conservative numerical fluxes.
-    
-    Stiffened equation of state is used to compute the required variables from 
-    given input.
-    
-    Toro, E.I. and Spruce, M. and Spears, W.: Restoration of the Contact
-    Surface in the HLL-Riemann Solver, Shock Waves, 4:25-34, 1996
-    
+    Implementation of inviscid numerical fluxes based on Roe & Pike FDS scheme
+    with Harten's entropy fix. This is a first order scheme
+
 Author
-    Ghanshyam Bharate, IIT Bombay
+    Aleksandar Jemcov
+    Rewrite by Hrvoje Jasak
 
 SourceFiles
     SGL2RoeALEFlux.H
@@ -45,7 +40,7 @@ SourceFiles
 #ifndef SGL2RoeALEFlux_H
 #define SGL2RoeALEFlux_H
 
-#include "fvCFD.H"
+#include "dbnsFlux.H" 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -53,49 +48,90 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class hllcFlux Declaration
+                           Class SGL2RoeALEFlux Declaration
 \*---------------------------------------------------------------------------*/
 
-class SGL2RoeALEFlux
+class SGL2RoeALEFlux:
+public dbnsFlux
 {
+    // privet 
+    scalar pinf;
+    scalar gamma;
+    scalar Cv;
+    scalar q;
 public:
+    TypeName("SGL2RoeALEFlux");
 
     // Constructors
 
-        //- Constructor null
-        SGL2RoeALEFlux()
-        {}
+    //- Construct null
+    SGL2RoeALEFlux(const fvMesh& mesh, const dictionary&)
+        {
+            word thermoTypeName;
+            
+                IOdictionary thermoDict
+                (
+                    IOobject
+                    (
+                        "thermophysicalProperties",
+                        mesh.time().constant(),
+                        mesh,
+                        IOobject::MUST_READ_IF_MODIFIED,
+                        IOobject::NO_WRITE
+                    )
+                );
 
+                thermoDict.lookup("thermoType") >> thermoTypeName;
+            
 
+            if (thermoTypeName == "externalStiffenedGasThermo")
+            {
+                const dictionary& d = thermoDict.subDict("stiffenedGasCoeffs");
+                d.lookup("pInf") >> pinf;
+                d.lookup("gamma") >> gamma;
+                d.lookup("Cv") >> Cv;
+                d.lookup("q") >> q;
+            }
+            else
+            {
+                FatalErrorIn("SGL2RoeALEFlux")
+                << "thermo Type Name = " << thermoTypeName << nl
+                << " it shoudl be externalStiffenedGasThermo " << nl
+                << exit(FatalError);
+            }
+        }
+    
+    
     // Destructor - default
-
+    virtual ~SGL2RoeALEFlux() {};
 
     // Member Functions
 
         //- Update fluxes based on current left and right states
-       void evaluateFlux
-         (
-            scalar& rhoFlux,
-            vector& rhoUFlux,
-            scalar& rhoEFlux,
-            const scalar& pLeft,
-            const scalar& pRight,
-            const vector& ULeft,
-            const vector& URight,
-            const scalar& TLeft,
-            const scalar& TRight,
-            const scalar& q,
-            const scalar& pinf,
-            const scalar& gamma,
-            const scalar& Cv,
-            const vector& Sf,
-            const scalar& magSf,
-            const scalar& meshPhi,
-            const scalar& fp1Left,
-            const scalar& fp1Right
-         ) const;
+    virtual void evaluateFlux
+    (
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi,
+        const tensor& R,
+        const tensor& RTranspos,
+        const scalar& fp1Left,
+        const scalar& fp1Right
+    ) const;
 };
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

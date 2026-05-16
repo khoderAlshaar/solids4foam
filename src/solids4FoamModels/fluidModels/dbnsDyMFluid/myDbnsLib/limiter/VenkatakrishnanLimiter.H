@@ -60,7 +60,8 @@ public:
         //- Construct null
         VenkatakrishnanLimiter()
         :
-            k_(5)
+            k_(3)
+            // k_(0.001)
         {}
 
         //- Set scalar limiter value

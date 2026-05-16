@@ -193,8 +193,8 @@ myBackwardDualDdtScheme<Type>::fvcDdt
         mesh()
     );
 
-    scalar deltaT = deltaT_();
-    scalar deltaT0 = deltaT0_(vf);
+    scalar deltaT = mesh().time().deltaTValue();
+    scalar deltaT0 = deltaT;
 
     scalar coefft   = 1 + deltaT/(deltaT + deltaT0);
     scalar coefft00 = deltaT*deltaT/(deltaT0*(deltaT + deltaT0));
@@ -265,8 +265,8 @@ myBackwardDualDdtScheme<Type>::fvcDdt
         mesh()
     );
 
-    scalar deltaT = deltaT_();
-    scalar deltaT0 = deltaT0_(vf);
+    scalar deltaT = mesh().time().deltaTValue();
+    scalar deltaT0 = deltaT;
 
     scalar coefft   = 1 + deltaT/(deltaT + deltaT0);
     scalar coefft00 = deltaT*deltaT/(deltaT0*(deltaT + deltaT0));
@@ -444,20 +444,20 @@ myBackwardDualDdtScheme<Type>::fvmDdt
     );
     fvMatrix<Type>& fvm = tfvm();
 
-    scalar deltaT = deltaT_(vfOld);
-    //! some issue with the deltaT0_
-    scalar deltaT0 = deltaT_(vfOld);
 
     
+
+
+     scalar deltaT = mesh().time().deltaTValue();
+    scalar deltaT0 = deltaT;
+
+    scalar coefft   = 1 + deltaT/(deltaT + deltaT0);  //3/2
+    scalar coefft00 = deltaT*deltaT/(deltaT0*(deltaT + deltaT0));  //1/2
+    scalar coefft0  = coefft + coefft00; //2
+
     scalar rDeltaT = 1.0/deltaT;
     scalarField rDeltaTau = scalar(1.0)/(deltaTau.internalField());
 
-    scalar r = deltaT/deltaT0;
-    scalar coeffAlpha = (1.0 + 2.0*r)/(1.0 + r);     // α 3/2
-    scalar coeffBeta  = (1.0 + r)/r;                  // β 4/2
-    scalar coeffGamma = 1.0/(r*(1.0 + r));            // γ 1/2
-                        // = 4/2
-   
     // scalarField newTerm =  scalar(1.0)+ (scalar(2.0)*coefft *deltaTau.internalField() * rDeltaT);
 
     fvm.diag() = (rDeltaTau)*mesh().V();
@@ -466,7 +466,7 @@ myBackwardDualDdtScheme<Type>::fvmDdt
 
     // Info<< "stepI= " <<stepI<<endl;
 
-    if (stepI < 2)
+    if (mesh().time().timeIndex() == 0)
     {
         // Info << "Hello from 1st fvmDdt  mesh().time().value() == 0.0"<<endl;
         if (mesh().moving())
@@ -500,9 +500,9 @@ myBackwardDualDdtScheme<Type>::fvmDdt
             fvm.source() =
             rDeltaTau*vf.internalField()*mesh().V() - rDeltaT *
             (
-                coeffAlpha*vf.internalField()*mesh().V()
-                - coeffBeta  *vf.oldTime().internalField()*mesh().V0()
-                + coeffGamma *vf.oldTime().oldTime().internalField()*mesh().V00()
+                coefft*vf.internalField()*mesh().V()
+                - coefft0  *vf.oldTime().internalField()*mesh().V0()
+                + coefft00 *vf.oldTime().oldTime().internalField()*mesh().V00()
             );
         }
 
@@ -512,9 +512,9 @@ myBackwardDualDdtScheme<Type>::fvmDdt
             (
                 rDeltaTau*vf.internalField() - rDeltaT *
                 (
-                    coeffAlpha*vf.internalField()
-                - coeffBeta*vf.oldTime().internalField()
-                + coeffGamma*vf.oldTime().oldTime().internalField()
+                    coefft*vf.internalField()
+                - coefft0*vf.oldTime().internalField()
+                + coefft00*vf.oldTime().oldTime().internalField()
                 )
             );
         }

@@ -1,2 +1,0 @@
-There is a conflect between compressible and incompressible turbulance models where bothe models requiers to include torbulanceModel.H. However, the compiler take the first library mentiond in the "options" files, -lincompressibleTurbulanceModel for example,  and ignore the second one, lcompressibleTurbulanceModel.
-There is a need  to compile a different location of turbulance lib named myTurbulanceModel.H that does not conflect with the original one.

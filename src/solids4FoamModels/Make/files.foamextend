@@ -54,6 +54,8 @@ $(explicitGodunovCCSolid)/solidDynamicsFlux/solidFlux/solidFlux.C
 $(explicitGodunovCCSolid)/solidDynamicsFlux/solidFlux/solidRoeFlux/solidRoeFlux.C
 $(explicitGodunovCCSolid)/solidDynamicsFlux/solidNumericFlux/solidNumericFlux.C
 
+$(explicitGodunovCCSolid)/SolidConvergenceControl/SolidConvergenceControl.C
+
 
 
 $(explicitGodunovCCSolid)/explicitGodunovCCSolid.C
@@ -68,17 +70,24 @@ fluidModels/sonicLiquidFluid/sonicLiquidFluid.C
 
 
 
-fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcSGLMFlux/hllcSGLMFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcSGLMALEFlux/hllcSGLMALEFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcSGALEFlux/hllcSGALEFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/SGL2RoeALEFlux/SGL2RoeALEFlux.C
-fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/SGL2RoeFlux/SGL2RoeFlux.C
 
+/*fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/roeFlux/roeFlux.C*/
+
+/*
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcThormberFlux/hllcThormberFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcThormberPFlux/hllcThormberPFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hllcThormberPNFlux/hllcThormberPNFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/hlleTNPFlux/hlleTNPFlux.C
+*/
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/roeALEFlux/roeALEFlux.C
+fluidModels/dbnsDyMFluid/myDbnsLib/dbnsFlux/L2RoeALEFlux/L2RoeALEFlux.C
 
 
 fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/basicNumericFlux.C
 fluidModels/dbnsDyMFluid/myDbnsLib/basicNumericFlux/newBasicNumericFlux.C
 fluidModels/dbnsDyMFluid/myDbnsLib/numericFlux/numericFluxes.C
+
+
 
 fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/localTimeStep/localTimeStep.C
 fluidModels/dbnsDyMFluid/myDbnsLib/timeStepping/myBackwardDualDdtScheme/myBackwardDualDdtSchemes.C

@@ -1,28 +1,29 @@
-// mySolveRK2.H - Pseudo-time RK2 inner loop
-// Expects fields and control variables to be visible in scope
+conv.read(mesh.solutionDict()); // re-read if user changes dict during run
 
-physDeltaT[1] = runTime.deltaT().value();
-physDeltaT[2] = runTime.deltaT0().value();
-physDeltaT[0] = 1.0;
+Info << "\nphysical Time = " << runTime.value() << nl;
+
+// physDeltaT[1] = runTime.deltaT().value();
+// physDeltaT[2] = runTime.deltaT0().value();
+// physDeltaT[0] = 1.0;
 
 int iCorr = 0;
-scalar initialResidual = GREAT; // per-physical-step initial residual
 
+    Info<< "time scale min/max = "
+    << gMin(localTimeStep.CoDeltaT().internalField())
+    << ", " << gMax(localTimeStep.CoDeltaT().internalField()) << endl;
 // Pseudo time loop (Correction loop)
 do
 {
   
     lduMatrix::debug = 0;
 
-    if (!adjustTimeStep)
-    {
-        localTimeStep.update(maxCo, adjustTimeStep);
-    }
+    localTimeStep.update(maxCo, localDt_);
+
 
     pseudoTimeStep = dimensionedScalar
     (
         "pseudoTimeStep",
-        CoDeltaT.dimensions(),
+        dimTime,
         min(localTimeStep.CoDeltaT().internalField())
     );
 
@@ -61,7 +62,8 @@ do
 
         if( i ==0 )
         {
-            #include "newUpdateFields.H"
+            // #include "newUpdateFields.H"
+            #include "myUpdateFields.H"
                     
             if (mesh.moving())
             {
@@ -79,7 +81,8 @@ do
     rhoU = 0.5*(rhoU.prevIter() + rhoU);
     rhoE = 0.5*(rhoE.prevIter() + rhoE);
 
-    #include "newUpdateFields.H"
+    // #include "newUpdateFields.H"
+    #include "myUpdateFields.H"
 
 
     if (mesh.moving())
@@ -91,9 +94,12 @@ do
         phi = linearInterpolate(rho*U) & mesh.Sf();
     }
 
+    turbulence_->correct();
 
+    ++iCorr;
 }
-while (!conv.pseudoConverged(iCorr, pseudoTimeStep, rho, rhoU, rhoE) && ++iCorr < conv.pseudoMaxIters());
+// while (!conv.pseudoConverged(iCorr, pseudoTimeStep, rho, rhoU, rhoE) && ++iCorr < conv.pseudoMaxIters());
+while (!conv.pseudoConverged(iCorr, pseudoTimeStep, rho, rhoU, rhoE));
 
 turbulence_->correct();
 

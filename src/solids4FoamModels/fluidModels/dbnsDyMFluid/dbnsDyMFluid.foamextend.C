@@ -114,8 +114,8 @@ dbnsDyMFluid::dbnsDyMFluid
             IOobject::AUTO_WRITE
         ),
         thermo_.rho()
-    ),
-    
+    ),  
+
     rhoU_
     (
         IOobject
@@ -138,8 +138,8 @@ dbnsDyMFluid::dbnsDyMFluid
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        // rho_*(h_ + 0.5*magSqr(U())) - p()
-        rho_*(((p() + (thermo_.Cp()/thermo_.Cv())*pInf)/(p() + pInf) )*thermo_.Cv() * T_ + q) + 0.5*rho_*magSqr(U())
+        rho_*(h_ + 0.5*magSqr(U())) - p()
+        // rho_*(((p() + (thermo_.Cp()/thermo_.Cv())*pInf)/(p() + pInf) )*thermo_.Cv() * T_ + q) + 0.5*rho_*magSqr(U())
     ),
     
     dbnsFluxPtr_ 
@@ -193,19 +193,19 @@ dbnsDyMFluid::dbnsDyMFluid
     ),
     localTimeStep_(U(), thermo_, turbulence_()),
     
-    CoDeltaT_
-    (
-        IOobject
-        (
-            "CoDeltaT_",
-            runTime.timeName(),
-            mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh(),
-        dimensionedScalar("CoDeltaT_", dimTime, 0.1)
-    ),
+    // CoDeltaT_
+    // (
+    //     IOobject
+    //     (
+    //         "CoDeltaT_",
+    //         runTime.timeName(),
+    //         mesh(),
+    //         IOobject::NO_READ,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     mesh(),
+    //     dimensionedScalar("CoDeltaT_", dimTime, 0.1)
+    // ),
     pseudoTimeStep_ ("pseudoTimeStep", dimTime, 0.0),
     // numberSubCycles_
     // (
@@ -232,8 +232,25 @@ dbnsDyMFluid::dbnsDyMFluid
     maxDeltaT_
     (
         runTime.controlDict().lookupOrDefault<scalar>("maxDeltaT", GREAT)
+    ),
+    
+    localDt_
+    (  
+        runTime.controlDict().lookupOrDefault("localDt", false)
+    ),
+    pPrim_
+    (
+        IOobject
+        (
+            "pPrim",
+            runTime.timeName(),
+            mesh(),
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        p()-pRef
     )
- 
+    
 {
 
 
@@ -265,65 +282,50 @@ dbnsDyMFluid::dbnsDyMFluid
     // mesh().setFluxRequired(p().name());
     p() = thermo_.p();
 
-    // turbulence_.validate();
 
-    // if (mesh().dynamic())
-    // {
-    //     Info<< "Constructing face velocity Uf\n" << endl;
-
-    //     rhoUf_.reset
-    //     (
-    //         new surfaceVectorField
-    //         (
-    //             IOobject
-    //             (
-    //                 "rhoUf",
-    //                 runTime.timeName(),
-    //                 mesh(),
-    //                 IOobject::READ_IF_PRESENT,
-    //                 IOobject::AUTO_WRITE
-    //             ),
-    //             fvc::interpolate(rho_*U())
-    //         )
-    //     );
-
-
-    //     rhoUf_().oldTime();
-
-    
-    //     // if (U().nOldTimes())
-    //     // {
-    //     //     volVectorField* Uold = &U().oldTime();
-    //     //     volScalarField* Kold = &K_.oldTime();
-    //     //     *Kold == 0.5*magSqr(*Uold);
-
-    //     //     while (Uold->nOldTimes())
-    //     //     {
-    //     //         Uold = &Uold->oldTime();
-    //     //         Kold = &Kold->oldTime();
-    //     //         *Kold == 0.5*magSqr(*Uold);
-    //     //     }
-    //     // }
-
-    // }
-
-
-    // Info<< "exitting dbnsDyMFluid constructor " << endl;
-
-    // const fvMesh& mesh = this->mesh();
-    // const surfaceScalarField& phi = this->phi();
-    // #include "CourantNo.H"
-
-    // Create temperature field if necessary
-
-
- 
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 void dbnsDyMFluid::setDeltaT(Time& runTime)
 {
+        // if (adjustTimeStep_)
+        // {
+        //     localTimeStep_.update(maxCo_, localDt_);
+        //     runTime.setDeltaT
+        //     (
 
+        //             min(localTimeStep_.CoDeltaT()).value()
+        //     );
+        //     // conv.pseudoMaxIters() = 1;
+        // }
+        if (adjustTimeStep_)
+        {
+        surfaceScalarField amaxSf("amaxSf", 
+        mag(fvc::interpolate(U()) & mesh().Sf()) +
+        mesh().magSf() * fvc::interpolate(sqrt(thermo_.Cp()/thermo_.Cv()/thermo_.psi())));
+        
+
+        #include "compressibleCFLNo.H"
+        // #include "setDeltaT.H"
+  
+            scalar maxDeltaTFact = maxCo_/(CoNum + SMALL);
+            scalar deltaTFact = min(min(maxDeltaTFact, 1.0 + 0.1*maxDeltaTFact), 1.2);
+
+            runTime.setDeltaT
+            (
+                // Foam::max
+                // (
+                //     minDeltaT_,
+                //     Foam::min
+                //     (
+                        deltaTFact*runTime.deltaT().value()//,
+                //         maxDeltaT_
+                //     )
+                // )
+            );
+
+            Info<< "deltaT = " <<  runTime.deltaT().value() << endl;
+        }
 }
 
 
@@ -362,7 +364,8 @@ tmp<scalarField> dbnsDyMFluid::patchPressureForce(const label patchID) const
 #else
     tpF() =
 #endif
-        p().boundaryField()[patchID]- pRef.value();
+        // p().boundaryField()[patchID]- pRef.value();
+        p().boundaryField()[patchID];
 
     return tpF;
 }
@@ -387,7 +390,7 @@ bool dbnsDyMFluid::evolve()
     localTimeStep& localTimeStep = localTimeStep_;
     IOField<scalar>& physDeltaT = physDeltaT_;
     dimensionedScalar& pseudoTimeStep = pseudoTimeStep_;
-    volScalarField& CoDeltaT = CoDeltaT_;
+    // volScalarField& CoDeltaT = CoDeltaT_;
 
 
     const Switch& adjustTimeStep = adjustTimeStep_;
@@ -403,38 +406,60 @@ bool dbnsDyMFluid::evolve()
     blockLduMatrix::debug=0;
 
     maxCo = runTime.controlDict().lookupOrDefault<scalar>("maxCo", 1.0);    
-
-    #include "readFieldBounds.H"
+ 
+    #include "readFieldBounds.H"   
     #include "readMultiStage.H"
     conv.read(mesh.solutionDict());
 
-    if (adjustTimeStep)
-    {
-        localTimeStep.update(maxCo,adjustTimeStep);
-        runTime.setDeltaT
-        (
-            min
-            (
-                min(localTimeStep.CoDeltaT()).value(),
-                maxDeltaT
-            )
-        );
-        conv.pseudoMaxIters() = 1;
-    }
+    // if (adjustTimeStep)
+    // {
+    //     localTimeStep.update(maxCo,adjustTimeStep);
+    //     runTime.setDeltaT
+    //     (
+    //         min
+    //         (
+    //             min(localTimeStep.CoDeltaT()).value(),
+    //             maxDeltaT
+    //         )
+    //     );
+    //     conv.pseudoMaxIters() = 1;
+    // }
 
     // Info<< "\n physical Time = " << runTime.value() << endl;
     // Ideally we would not need a specific FSI mesh update function
     // Hopefully we can remove the need for it soon
+            // Info<< "HEllo from 0"<<endl;
+
+    bool meshChanged = false;
     if (fluidModel::fsiMeshUpdate())
     {
+        // Info<< "HEllo from 1"<<endl;
+        // Info<< "fluidModel::fsiMeshUpdate() "<< fluidModel::fsiMeshUpdate()<<endl;;
         // The FSI interface is in charge of calling mesh.update()
-        fluidModel::fsiMeshUpdateChanged();
+        meshChanged = fluidModel::fsiMeshUpdateChanged(); //! the porblem is that this one stays 0
+        // Info<< "meshChanged = fluidModel::fsiMeshUpdateChanged();: "<< meshChanged<<endl;
     }
     else
     {
-        // Do any mesh changes
-        mesh.update();
+        //         Info<< "HEllo from 2"<<endl;
+
+        // Info<< "else "<< fluidModel::fsiMeshUpdate();
+        meshChanged = mesh.update();
+        // Info<< "meshChanged = mesh.update(): "<< meshChanged<<endl;
+        reduce(meshChanged, orOp<bool>());
+            // Info<< "reduce(meshChanged, orOp<bool>()): "<< meshChanged<<endl;
+
     }
+    // Info<< "meshChanged: "<< meshChanged<<endl;
+    if (meshChanged)
+    {
+                // Info<< "HEllo from 3"<<endl;
+
+        // Info<< "mesh.moving(): "<<mesh.moving()<<endl;
+        const Time& runTime = fluidModel::runTime();
+#       include "volContinuity.H"
+    }
+        // Info<< "HEllo from 4"<<endl;
 
  // Pseudo-time RK2 inner loop (updates rho, rhoU, rhoE, phi, etc.)
         if(conv.solverType() == "MSMS" ) // Multi-Stage-Multi-Step
@@ -446,11 +471,11 @@ bool dbnsDyMFluid::evolve()
             Info << "solver Type: MSSS -  Multi-Stage-Single-Step"<<endl;
             #include "mySolveMSSS.H"
         }
-        // else if (conv.solverType() == "SSSS" ) // Single-Stage-Single-Step
-        // {
-        //     Info << "solver Type: SSSS -  Single-Stage-Single-Step"<<endl;
-        //     #include "mySolveSSSS.H"
-        // }
+        else if (conv.solverType() == "SSSS" ) // Single-Stage-Single-Step
+        {
+            Info << "solver Type: SSSS -  Single-Stage-Single-Step"<<endl;
+            #include "mySolveSSSS.H"
+        }
         // else if (conv.solverType() == "MSMS-D" ) // Single-Stage-Single-Step
         // {
         //     #include "solveFluid.H"
@@ -460,16 +485,18 @@ bool dbnsDyMFluid::evolve()
             Info << "please set the solver Type"<<endl;
             // break;
         }
+        pPrim_ = p - pRef;
 
     //! After inner loop, check global/physical convergence using oldTime() fields
-    if (conv.physicalConverged(rho, rhoU, rhoE))
-    {
-        runTime.write();
-        // break;
-    }
+    conv.physicalConverged(rho, rhoU, rhoE);
+    // if (conv.physicalConverged(rho, rhoU, rhoE))
+    // {
+    //     runTime.write();
+    //     // break;
+    // }
     
     
-    return 0;
+    return true;
 }
 
 

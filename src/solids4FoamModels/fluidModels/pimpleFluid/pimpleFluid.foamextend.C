@@ -429,9 +429,11 @@ bool pimpleFluid::evolve()
         meshChanged = mesh.update();
         reduce(meshChanged, orOp<bool>());
     }
+    Info<< "meshChanged: "<< meshChanged<<endl;
 
     if (meshChanged)
     {
+        Info<< "mesh.moving(): "<<mesh.moving()<<endl;
         const Time& runTime = fluidModel::runTime();
 #       include "volContinuity.H"
     }

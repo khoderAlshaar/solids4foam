@@ -41,10 +41,10 @@ SourceFiles
 #include "myTurbulenceModel.H"
 #include "bound.H"
 // #include "roeALEFlux.H"
-#include "MDLimiter.H"
-#include "firstOrderLimiter.H"
-#include "BarthJespersenLimiter.H"
-#include "VenkatakrishnanLimiter.H"
+// #include "MDLimiter.H"
+// #include "firstOrderLimiter.H"
+// #include "BarthJespersenLimiter.H"
+// #include "VenkatakrishnanLimiter.H"
 #include "numericFlux.H"
 // #include "backwardDualDdtScheme.H"
 #include "myBackwardDualDdtScheme.H"  
@@ -91,6 +91,7 @@ class dbnsDyMFluid
         // const dimensionedScalar gamma;
                 // //- Fluid density
         volScalarField rho_;
+        volScalarField pPrim_;
         // volVectorField U_;
         volVectorField rhoU_;
         volScalarField rhoE_;
@@ -116,7 +117,7 @@ class dbnsDyMFluid
             IOField<scalar> physDeltaT_;
         
         localTimeStep localTimeStep_;
-        volScalarField CoDeltaT_;
+        // volScalarField CoDeltaT_;
         dimensionedScalar pseudoTimeStep_;
         // label numberSubCycles_;
         // scalar tolerance_;
@@ -143,6 +144,8 @@ class dbnsDyMFluid
 
                 //- For adjustable time-step, this is the maximum Courant number
          scalar maxCo_;
+         
+bool localDt_;
 
         //- For adjustable time-step, this is the maximum time-stpe
         const scalar maxDeltaT_;

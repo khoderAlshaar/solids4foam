@@ -45,7 +45,7 @@ SourceFiles
 #ifndef hllcSGFlux_H
 #define hllcSGFlux_H
 
-#include "fvCFD.H"
+#include "dbnsFlux.H" 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,40 +56,99 @@ namespace Foam
                            Class hllcFlux Declaration
 \*---------------------------------------------------------------------------*/
 
-class hllcSGFlux
+class hllcSGFlux:
+public dbnsFlux
 {
-public:
+    // privet member data
+    scalar pinf;
+    scalar gamma;
+    scalar Cv;
+    scalar q;
 
+public:
+    TypeName("hllcSGFlux");
     // Constructors
 
         //- Constructor null
-        hllcSGFlux()
-        {}
+        hllcSGFlux(const fvMesh& mesh, const dictionary&)
+        {
+            word thermoTypeName;
+            
+                IOdictionary thermoDict
+                (
+                    IOobject
+                    (
+                        "thermophysicalProperties",
+                        mesh.time().constant(),
+                        mesh,
+                        IOobject::MUST_READ_IF_MODIFIED,
+                        IOobject::NO_WRITE
+                    )
+                );
+
+                thermoDict.lookup("thermoType") >> thermoTypeName;
+            
+            if (thermoTypeName == "externalStiffenedGasThermo")
+            {
+                const dictionary& d = thermoDict.subDict("stiffenedGasCoeffs");
+                d.lookup("pInf") >> pinf;
+                d.lookup("gamma") >> gamma;
+                d.lookup("Cv") >> Cv;
+                d.lookup("q") >> q;
+            }
+
+            // if (thermoTypeName == "eRhoThermo<constTransportEos<SGEOS>>")
+            // {
+                // const dictionary& d = thermoDict.subDict("stiffenedGasCoeffs");
+                // d.lookup("pInf") >> pInf;
+                // d.lookup("gamma") >> gamma;
+                // d.lookup("Cv") >> Cv;
+                // d.lookup("q") >> q;
+                 
+                // Read thermodynamic properties from thermo dictionary
+                // word firstToken;
+                // thermoDict.lookup("fluidProperties") >> firstToken >> q
+                // >> pinf >> gamma >> Cv;
+            // }
+            else
+            {
+                FatalErrorIn("hllcSGFlux")
+                << "thermo Type Name = " << thermoTypeName << nl
+                << " it shoudl be eRhoThermo " << nl
+                << exit(FatalError);
+            }
+        }
 
 
     // Destructor - default
+     virtual ~hllcSGFlux() {};
 
 
     // Member Functions
 
         //- Update fluxes based on current left and right states
-       void evaluateFlux
+      virtual void evaluateFlux
          (
-            scalar& rhoFlux,
-            vector& rhoUFlux,
-            scalar& rhoEFlux,
-            const scalar& pLeft,
-            const scalar& pRight,
-            const vector& ULeft,
-            const vector& URight,
-            const scalar& TLeft,
-            const scalar& TRight,
-            const scalar& q,
-            const scalar& pinf,
-            const scalar& gamma,
-            const scalar& Cv,
-            const vector& Sf,
-            const scalar& magSf
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi,
+        const tensor& R,
+        const tensor& RTranspos,
+        const scalar& fp1Left,
+        const scalar& fp1Right
          ) const;
 };
 

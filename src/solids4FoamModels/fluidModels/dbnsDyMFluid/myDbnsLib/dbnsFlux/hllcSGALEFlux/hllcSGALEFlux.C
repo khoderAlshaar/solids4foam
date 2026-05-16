@@ -24,29 +24,38 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "hllcSGALEFlux.H"
+#include "addToRunTimeSelectionTable.H"
+namespace Foam
+{
+    defineTypeNameAndDebug(hllcSGALEFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, hllcSGALEFlux, dictionary);
+}
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 void Foam::hllcSGALEFlux::evaluateFlux
 (
-    scalar& rhoFlux,
-    vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const scalar& pLeft,
-    const scalar& pRight,
-    const vector& ULeft,
-    const vector& URight,
-    const scalar& TLeft,
-    const scalar& TRight,
-    const scalar& q,
-    const scalar& pinf,
-    const scalar& gamma,
-    const scalar& Cv,
-    const vector& Sf,
-    const scalar& magSf,
-    const scalar& meshPhi,
-    const scalar& fp1Left,
-    const scalar& fp1Right
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi,
+        const tensor& R,
+        const tensor& RTranspos,
+        const scalar& fp1Left,
+        const scalar& fp1Right
 ) const
 {
 
@@ -144,7 +153,7 @@ void Foam::hllcSGALEFlux::evaluateFlux
     //     Foam::sqrt(max(0 ,(gamma - 1)*(HTilde - 0.5*magSqr(UTilde) )));
     //! or is it contrUTilde :
         const scalar aTilde =
-        Foam::sqrt(max(0 ,(gamma - 1)*(HTilde - 0.5*magSqr(contrUTilde) )));
+        Foam::sqrt(max(0 ,(gamma - 1)*(HTilde - 0.5*magSqr(UTilde) )));
 
     // Step 3: compute signal speeds for face:
     const scalar SLeft  = min(qLeft-aLeft, contrUTilde-aTilde);
@@ -231,5 +240,6 @@ void Foam::hllcSGALEFlux::evaluateFlux
     rhoUFlux = (convectionSpeed*rhoUState+pState*normalVector)*magSf;
     rhoEFlux = (convectionSpeed*(rhoEState+pState))*magSf;
 }
+
 
 // ************************************************************************* //

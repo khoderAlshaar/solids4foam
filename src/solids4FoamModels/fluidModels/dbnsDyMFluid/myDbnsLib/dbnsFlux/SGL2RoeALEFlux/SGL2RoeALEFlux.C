@@ -1,31 +1,34 @@
 /*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     5.0
-    \\  /    A nd           | Web:         http://www.foam-extend.org
-     \\/     M anipulation  | For copyright notice see file Copyright
--------------------------------------------------------------------------------
-License
-    This file is part of foam-extend.
+  L2-Roe low-dissipation Roe flux for low Mach numbers
+  Implementation based on Oßwald et al. (2016) and Rieper (2011).
 
-    foam-extend is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation, either version 3 of the License, or (at your
-    option) any later version.
+  Key corrections:
+  - Local Mach number based on max(ML, MR), not Roe-averaged velocity
+  - Scaling applied to velocity jumps in wave strength computation
+  - Shock switch properly applied to both normal and tangential components
+  - Physical flux evaluation unchanged
+\*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*\
+  LMRoe - Low Mach number fix for Roe's approximate Riemann solver
+  Implementation based on Rieper (2011) "A low-Mach number fix for Roe's 
+  approximate Riemann solver", Journal of Computational Physics 230 (2011).
 
-    foam-extend is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
-
+  Key differences from L2Roe:
+  - Only the normal velocity jump is scaled by the local Mach number
+  - Tangential velocity jumps remain UNSCALED
+  - This is sufficient to fix the low Mach accuracy problem
+  - L2Roe additionally scales tangential jumps to reduce dissipation
+    at high wavenumbers (relevant for LES/DES)
 \*---------------------------------------------------------------------------*/
 
 #include "SGL2RoeALEFlux.H"
+#include "addToRunTimeSelectionTable.H"
 
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+namespace Foam
+{
+    defineTypeNameAndDebug(SGL2RoeALEFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, SGL2RoeALEFlux, dictionary);
+}
 
 void Foam::SGL2RoeALEFlux::evaluateFlux
 (
@@ -38,13 +41,15 @@ void Foam::SGL2RoeALEFlux::evaluateFlux
     const vector& URight,
     const scalar& TLeft,
     const scalar& TRight,
-    const scalar& q,
-    const scalar& pinf,
-    const scalar& gamma,
-    const scalar& Cv,
+    const scalar& RLeft,
+    const scalar& RRight,
+    const scalar& CvLeft,
+    const scalar& CvRight,
     const vector& Sf,
     const scalar& magSf,
     const scalar& meshPhi,
+    const tensor& R,
+    const tensor& RTranspos,
     const scalar& fp1Left,
     const scalar& fp1Right
 ) const
@@ -114,8 +119,8 @@ void Foam::SGL2RoeALEFlux::evaluateFlux
     const scalar cRight = Foam::sqrt(max((gamma*(pRight + pinf))/rhoRight,SMALL));
     
     // // Local Mach numbers at left and right states (based on total velocity magnitude)
-    const scalar ML = mag(ULeft) / (cLeft + VSMALL);
-    const scalar MR = mag(URight) / (cRight + VSMALL);
+    const scalar ML = mag(contrVLeft) / (cLeft + VSMALL);
+    const scalar MR = mag(contrVRight) / (cRight + VSMALL);
     
     // Scaling factor: min(1, max(ML, MR)) as per Equation (6) in the paper
     const scalar Ma_local = max(ML, MR); //!  increase
@@ -183,7 +188,26 @@ void Foam::SGL2RoeALEFlux::evaluateFlux
     scalar lambda3 = mag(contrVTilde + cTilde - w_n);
 
     // Step 7: check for Harten entropy correction
+    const scalar lambda1L = contrVLeft - cLeft  - w_n;
+    const scalar lambda3L = contrVLeft+ cLeft  - w_n;
 
+    // Right state eigenvalues
+    const scalar lambda1R = contrVRight - cRight - w_n;
+    const scalar lambda3R = contrVRight + cRight - w_n;
+
+    const scalar deltaLambda1 = max(lambda1R-lambda1L,0.0);
+    const scalar deltaLabmda3 = max(lambda3R-lambda3L,0.0);
+
+    if (lambda1 < 2*deltaLambda1)
+    {
+        lambda1 = (sqr(lambda1)/(4*deltaLambda1)) + deltaLambda1;
+
+    }
+    if (lambda3 < 2*deltaLabmda3)
+    {
+        lambda3 = (sqr(lambda3)/(4*deltaLabmda3)) + deltaLabmda3;
+
+    }
 //     const scalar eps = 0.1*cTilde; //adjustable parameter
 
 //     if (lambda1 < eps || lambda2 < eps || lambda3 < eps)
@@ -195,29 +219,29 @@ void Foam::SGL2RoeALEFlux::evaluateFlux
 
     // Step 7a: Alternative entropy correction: Felipe Portela, 9/Oct/2013
 
-    const scalar UL = ULeft & normalVector;
-    const scalar UR = URight & normalVector;
+    // const scalar UL = ULeft & normalVector;
+    // const scalar UR = URight & normalVector;
 
-    // First eigenvalue: U - c
-    scalar eps = 2*max(0,(UR - cRight - w_n) - (UL - cLeft - w_n));
-    if (lambda1 < eps)
-    {
-        lambda1 = (sqr(lambda1) + sqr(eps))/(2.0*eps);
-    }
+    // // First eigenvalue: U - c
+    // scalar eps = 2*max(0,(UR - cRight) - (UL - cLeft));
+    // if (lambda1 < eps)
+    // {
+    //     lambda1 = (sqr(lambda1) + sqr(eps))/(2.0*eps);
+    // }
 
-    // Second eigenvalue: U
-    eps = 2*max(0, UR - UL - w_n);
-    if (lambda2 < eps)
-    {
-        lambda2 = (sqr(lambda2) + sqr(eps))/(2.0*eps);
-    }
+    // // Second eigenvalue: U
+    // eps = 2*max(0, UR - UL);
+    // if (lambda2 < eps)
+    // {
+    //     lambda2 = (sqr(lambda2) + sqr(eps))/(2.0*eps);
+    // }
 
-    // Third eigenvalue: U + c
-    eps = 2*max(0,(UR + cRight - w_n) - (UL + cLeft- w_n));
-    if (lambda3 < eps)
-    {
-        lambda3 = (sqr(lambda3) + sqr(eps))/(2.0*eps);
-    }
+    // // Third eigenvalue: U + c
+    // eps = 2*max(0,(UR + cRight) - (UL + cLeft));
+    // if (lambda3 < eps)
+    // {
+    //     lambda3 = (sqr(lambda3) + sqr(eps))/(2.0*eps);
+    // }
     // -------------------------
     // Flux difference components
     // -------------------------
@@ -278,5 +302,6 @@ void Foam::SGL2RoeALEFlux::evaluateFlux
     rhoUFlux = flux24*magSf;
     rhoEFlux = flux5*magSf;
 }
+
 
 // ************************************************************************* //

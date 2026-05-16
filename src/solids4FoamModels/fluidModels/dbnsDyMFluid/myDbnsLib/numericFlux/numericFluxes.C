@@ -30,21 +30,31 @@ License
 // #include "SGL2RoeFlux.H"
 // #include "SGThornberRoeFlux.H"
 
-#include "hllcSGLMFlux.H"
-#include "hllcSGLMALEFlux.H"
-#include "hllcSGALEFlux.H"
-#include "SGL2RoeFlux.H"
-#include "SGL2RoeALEFlux.H"
+
+// #include "roeFlux.H"
+// #include "L2RoeFlux.H"
+// #include "hlleTNPFlux.H"
+// #include "hlleTNPRotatedFlux.H"
+// #include "hllcTNPRotatedFlux.H"
+// #include "hllcRotatedFlux.H"
+// #include "hllcALEFlux.H"
+#include "roeALEFlux.H"
+#include "L2RoeALEFlux.H"
 
 
-#include "firstOrderLimiter.H"
+ 
+#include "firstOrderLimiter.H" 
 #include "BarthJespersenLimiter.H"
-#include "VenkatakrishnanLimiter.H"
+#include "VenkatakrishnanLimiter.H" 
+#include "Venkatakrishnan5Limiter.H" 
 // #include "MinmodLimiter.H"
 // #include "SuperbeeLimiter.H"
 // #include "VanAlbadaLimiter.H"
-// #include "WangLimiter.H"
-// #include "MichalakGoochLimiter.H"
+#include "WangLimiter.H"
+#include "MichalakGoochLimiter.H"
+#include "VanLeerLimiter.H"
+#include "VanAlbadaLimiter.H"
+#include "VenkatakrishnanStableLimiter.H"
 // #include "UnlimitedLimiter.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -58,10 +68,16 @@ namespace Foam
 makeBasicNumericFlux(Flux, firstOrderLimiter);                                \
 makeBasicNumericFlux(Flux, BarthJespersenLimiter);                            \
 makeBasicNumericFlux(Flux, VenkatakrishnanLimiter);                       \
+makeBasicNumericFlux(Flux, Venkatakrishnan5Limiter);                       \
+makeBasicNumericFlux(Flux, WangLimiter);                                    \
+makeBasicNumericFlux(Flux, MichalakGoochLimiter);                             \
+makeBasicNumericFlux(Flux, VanLeerLimiter);                             \
+makeBasicNumericFlux(Flux, VanAlbadaLimiter);                             \
+// makeBasicNumericFlux(Flux, VenkatakrishnanStableLimiter);                             \
 
 
 // makeBasicNumericFluxSG(Flux, SuperbeeLimiter);                                  \
-// makeBasicNumericFluxSG(Flux, VanAlbadaLimiter);                                 \
+makeBasicNumericFluxSG(Flux, VanAlbadaLimiter);                                 \
 // makeBasicNumericFluxSG(Flux, VanLeerLimiter);                                 \
 // makeBasicNumericFluxSG(Flux, MinmodLimiter);                                    \
 // makeBasicNumericFluxSG(Flux, WangLimiter);                                    \
@@ -69,14 +85,33 @@ makeBasicNumericFlux(Flux, VenkatakrishnanLimiter);                       \
 // makeBasicNumericFluxSG(Flux, UnlimitedLimiter);                             \
 // makeBasicNumericFlux(Flux, BarthJespersenNewLimiter);                           \
 
-
+ 
 // makeBasicNumericFluxForAllLimiters(hllcSGFlux);
-makeBasicNumericFluxForAllLimiters(hllcSGLMFlux);
-makeBasicNumericFluxForAllLimiters(hllcSGLMALEFlux);
-makeBasicNumericFluxForAllLimiters(hllcSGALEFlux);
-makeBasicNumericFluxForAllLimiters(SGL2RoeFlux);
-makeBasicNumericFluxForAllLimiters(SGL2RoeALEFlux);
+// makeBasicNumericFluxForAllLimiters(hllcSGLMFlux);
+// makeBasicNumericFluxForAllLimiters(hllcSGLMALEFlux);
+// makeBasicNumericFluxForAllLimiters(hllcSGALEFlux);
+// makeBasicNumericFluxForAllLimiters(roeSGFlux);
+// makeBasicNumericFluxForAllLimiters(hllcSGLMPFlux);
 // makeBasicNumericFluxForAllLimiters(SGThornberRoeFlux);
+// makeBasicNumericFluxForAllLimiters(SGL2RoeFlux);
+// makeBasicNumericFluxForAllLimiters(SGL2RoeALEFlux);
+// makeBasicNumericFluxForAllLimiters(SGL2RoeALE2Flux);
+// makeBasicNumericFluxForAllLimiters(SGRoeALEFlux);
+// makeBasicNumericFluxForAllLimiters(roeFlux);
+
+
+// makeBasicNumericFluxForAllLimiters(roeFlux);
+// makeBasicNumericFluxForAllLimiters(L2RoeFlux);
+// makeBasicNumericFluxForAllLimiters(hlleTNPFlux);
+// makeBasicNumericFluxForAllLimiters(hllcTNPRotatedFlux);
+// makeBasicNumericFluxForAllLimiters(hllcRotatedFlux);
+// makeBasicNumericFluxForAllLimiters(hllcALEFlux);
+makeBasicNumericFluxForAllLimiters(roeALEFlux);
+makeBasicNumericFluxForAllLimiters(L2RoeALEFlux);
+// makeBasicNumericFluxForAllLimiters(hlleTNPRotatedFlux);
+
+
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

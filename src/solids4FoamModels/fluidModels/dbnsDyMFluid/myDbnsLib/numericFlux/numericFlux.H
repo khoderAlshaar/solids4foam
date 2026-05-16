@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | foam-extend: Open Source CFD
-   \\    /   O peration     | Version:     5.0
+   \\    /   O peration     | Version:     4.1
     \\  /    A nd           | Web:         http://www.foam-extend.org
      \\/     M anipulation  | For copyright notice see file Copyright
 -------------------------------------------------------------------------------
@@ -25,10 +25,11 @@ Class
     numericFlux
 
 Description
-    Numeric flux class for density-based solvers
+    Single level numeric flux class for density-based solvers
 
 Author
-    Ghanshyam Bharate
+    Aleksandar Jemcov
+    Rewrite by Hrvoje Jasak
 
 SourceFiles
     numericFlux.H
@@ -43,6 +44,7 @@ SourceFiles
 #include "basicThermo.H"
 #include "fvc.H"
 #include "tmp.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -60,8 +62,9 @@ class numericFlux
     // Private data
 
         // Reference to primitive fields
-                //- Reference to mesh
+            //- Reference to mesh
             const fvMesh& mesh_;
+
             //- Static pressure
             const volScalarField& p_;
 
@@ -70,24 +73,12 @@ class numericFlux
 
             //- Static temperature
             const volScalarField& T_;
+            // const volScalarField& rho_;
 
             //- Reference to the thermophysicalModel
             basicThermo& thermo_;
-        
-        // Thermodynamic parameters
-            
-            //- Reference energy
-            dimensionedScalar q_;
 
-            //- Reference pressure
-            dimensionedScalar pInf_;
 
-            //- heat capacity ratio
-            dimensionedScalar gamma_;
-            
-            //- Specific heat capacity at constant volume
-            dimensionedScalar cv_;
-            
         // Fluxes
 
             //- Density flux
@@ -98,12 +89,15 @@ class numericFlux
 
             //- Energy flux
             surfaceScalarField rhoEFlux_;
+
             
             surfaceScalarField fp_;
 
             volScalarField fp1_;
 
+            surfaceTensorField R_;
 
+            surfaceTensorField RTranspos_;
 
 
         // Gradients: no longer stored.  HJ, 22/Apr/2016
@@ -168,6 +162,7 @@ public:
             const volScalarField& p,
             const volVectorField& U,
             const volScalarField& T,
+            // const volScalarField& rho,
             basicThermo& thermo
         );
 
@@ -176,13 +171,21 @@ public:
     virtual ~numericFlux()
     {}
 
-
-    // Member Functions
     void evalautePressureSensor
     (
-        // const surfaceScalarField& p_neg,
-        // const surfaceScalarField& p_pos
+        const volScalarField & p
+
     );
+
+    void setRotationalMatrix();
+
+    //- Return mesh reference
+    const fvMesh& mesh() const
+        {
+            return mesh_;
+        }
+
+    // Member Functions
 
         // Return fluxes
 
@@ -230,8 +233,10 @@ public:
 
             //- Compute flux
             virtual void computeFlux();
-            
-        Foam::tmp<Foam::surfaceScalarField> meshPhi() const;
+
+            Foam::tmp<Foam::surfaceScalarField> meshPhi() const;
+
+
 };
 
 

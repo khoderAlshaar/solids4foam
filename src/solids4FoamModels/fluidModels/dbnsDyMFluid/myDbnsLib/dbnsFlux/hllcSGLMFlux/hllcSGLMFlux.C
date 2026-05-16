@@ -24,33 +24,41 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "hllcSGLMFlux.H"
+#include "addToRunTimeSelectionTable.H"
+namespace Foam
+{
+    defineTypeNameAndDebug(hllcSGLMFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, hllcSGLMFlux, dictionary);
+}
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 void Foam::hllcSGLMFlux::evaluateFlux
 (
-    scalar& rhoFlux,
-    vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const scalar& pLeft,
-    const scalar& pRight,
-    const vector& ULeft,
-    const vector& URight,
-    const scalar& TLeft,
-    const scalar& TRight,
-    const scalar& q,
-    const scalar& pinf,
-    const scalar& gamma,
-    const scalar& Cv,
-    const vector& Sf,
-    const scalar& magSf,
-    const scalar& meshPhi,
-    const scalar& fp1Left,
-    const scalar& fp1Right
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi,
+        const tensor& R,
+        const tensor& RTranspos,
+        const scalar& fp1Left,
+        const scalar& fp1Right
 ) const
 {
 
-  
     // Step 1: decode left and right:
     // normal vector
     const vector normalVector = Sf/magSf;
@@ -72,7 +80,7 @@ void Foam::hllcSGLMFlux::evaluateFlux
 
     // Local Mach numbers at left and right states (based on total velocity magnitude)
     const scalar ML = mag(ULeft  ) / (aLeft + VSMALL);
-    const scalar MR = mag(URight ) / (aRight + VSMALL);
+    const scalar MR = mag(URight) / (aRight + VSMALL);
     
     // Scaling factor: min(1, max(ML, MR)) as per Equation (6) in the paper
     const scalar Ma_local = max(ML, MR); //!  increase
@@ -82,9 +90,6 @@ void Foam::hllcSGLMFlux::evaluateFlux
 
     // scalar fp = min(fp1Left,fp1Right);
     
-    // scalar fp = pow3(min(pLeft/pRight,pRight/pLeft));
-    
-
     // scalar zeta = 1- (1-zeta1) *fp ;
 
     const vector URight_star = 0.5*(ULeft + URight)  + zeta * 0.5*(URight - ULeft);
@@ -92,8 +97,8 @@ void Foam::hllcSGLMFlux::evaluateFlux
 
 
     // DensityVelocity
-    const vector rhoULeft = rhoLeft*ULeft_star;
-    const vector rhoURight = rhoRight*URight_star;
+    const vector rhoULeft = rhoLeft*ULeft;
+    const vector rhoURight = rhoRight*URight;
 
     // DensityTotalEnergy
     const scalar rhoELeft = rhoLeft*Cv*TLeft + pinf + rhoLeft*q + 0.5*rhoLeft*magSqr(ULeft_star);
@@ -123,7 +128,7 @@ void Foam::hllcSGLMFlux::evaluateFlux
     const scalar wRight = 1 - wLeft;
 
     // Roe averaged velocity
-    const vector UTilde = wLeft*ULeft_star + wRight*URight_star;
+    const vector UTilde = wLeft*ULeft + wRight*URight;
 
     // Roe averaged contravariant velocity
     const scalar contrUTilde = (UTilde & normalVector);
@@ -135,8 +140,6 @@ void Foam::hllcSGLMFlux::evaluateFlux
     // TODO: not sure if the correct (flow speed) and kappa is used here
     const scalar aTilde =
         Foam::sqrt(max(0 ,(gamma - 1)*(HTilde - 0.5*magSqr(UTilde) - q)));
-    // const scalar aTilde =
-    //     Foam::sqrt(max(0 ,(gamma - 1)*(HTilde - 0.5*magSqr(UTilde) )));
 
     // Step 3: compute signal speeds for face:
     const scalar SLeft  = min(UnLeft-aLeft, contrUTilde-aTilde);
@@ -223,5 +226,6 @@ void Foam::hllcSGLMFlux::evaluateFlux
     rhoUFlux = (convectionSpeed*rhoUState+pState*normalVector)*magSf;
     rhoEFlux = (convectionSpeed*(rhoEState+pState))*magSf;
 }
+
 
 // ************************************************************************* //

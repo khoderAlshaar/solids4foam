@@ -1,4 +1,7 @@
 
+        Info << "deltaT = " << runTime.deltaT().value() << endl;
+        Info << "physical Time = " << runTime.value() << endl;
+    
     lduMatrix::debug = 0;
 
     //incase using EulerLocalDdt schems
@@ -38,7 +41,8 @@
             );
 
             
-            #include "newUpdateFields.H"
+            // #include "newUpdateFields.H"
+            #include "myUpdateFields.H"
     
             if (mesh.moving())
             {

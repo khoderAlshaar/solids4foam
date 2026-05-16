@@ -151,6 +151,10 @@ class solidNumericFlux
         volVectorField lm_b_;
         volVectorField t_b_;
 
+        volVectorField phi_lm_;
+
+        volTensorField phi_P_;
+        volTensorField phi_F_;
 
 
         // Fluxes

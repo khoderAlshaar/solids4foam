@@ -105,6 +105,8 @@ mechanics::mechanics
             << "Valid type entries are '<= 1' or '> 0' for cfl"
             << abort(FatalError);
     }
+    const dimensionedScalar& h = op.minimumEdgeLength();
+    Info<<"min((h)=" <<h<<endl;
 }
 
 
@@ -169,9 +171,72 @@ void mechanics::time
     dimensionedScalar Up_time
 )
 {
-    const dimensionedScalar& h = op.minimumEdgeLength();
+    // const dimensionedScalar& h = op.minimumEdgeLength();
 
-    deltaT = cfl_*min((h)/Up_time, 0.666*runTime.deltaT());
+    const unallocLabelList& owner = mesh_.owner();
+    const unallocLabelList& neighbour = mesh_.neighbour();
+
+    // Compute characteristic length for each cell
+    // Calculated from min face delta coefficient.  HJ, 6/Sep/2012
+    volScalarField deltaX
+    (
+        IOobject
+        (
+            "deltaX",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("great", dimLength, GREAT)
+    );
+
+    const surfaceScalarField deltaFace
+    (
+        1/mesh_.surfaceInterpolation::deltaCoeffs()
+    );
+
+    // Compute maximum face area for each cell from the internal faces
+    forAll (owner, facei)
+    {
+        deltaX[owner[facei]] =
+            Foam::min(deltaX[owner[facei]], deltaFace[facei]);
+
+        deltaX[neighbour[facei]] =
+            Foam::min(deltaX[neighbour[facei]], deltaFace[facei]);
+    }
+
+    // Compute maximum face area for each cell from the boundary faces
+    forAll (deltaX.boundaryField(), patchi)
+    {
+        const fvsPatchScalarField& pDeltaFace =
+            deltaFace.boundaryField()[patchi];
+
+        const fvPatch& p = pDeltaFace.patch();
+
+        if (p.coupled())
+        {
+            const unallocLabelList& faceCells = p.patch().faceCells();
+
+            forAll (pDeltaFace, patchFacei)
+            {
+                deltaX[faceCells[patchFacei]] = Foam::min
+                (
+                    deltaX[faceCells[patchFacei]],
+                    pDeltaFace[patchFacei]
+                );
+            }
+        }
+    }
+
+    // compute the maximum inviscid deltaT
+    volScalarField deltaTInvis
+    (
+       deltaX/Up_time
+    );
+    deltaT = cfl_*min(min(deltaTInvis), 0.666*runTime.deltaT());
+    
 }
 
 

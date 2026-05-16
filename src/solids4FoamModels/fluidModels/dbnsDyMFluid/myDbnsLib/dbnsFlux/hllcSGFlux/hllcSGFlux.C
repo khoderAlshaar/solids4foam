@@ -24,26 +24,38 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "hllcSGFlux.H"
+#include "addToRunTimeSelectionTable.H"
+namespace Foam
+{
+    defineTypeNameAndDebug(hllcSGFlux, 0);
+    addToRunTimeSelectionTable(dbnsFlux, hllcSGFlux, dictionary);
+}
+
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 void Foam::hllcSGFlux::evaluateFlux
 (
-    scalar& rhoFlux,
-    vector& rhoUFlux,
-    scalar& rhoEFlux,
-    const scalar& pLeft,
-    const scalar& pRight,
-    const vector& ULeft,
-    const vector& URight,
-    const scalar& TLeft,
-    const scalar& TRight,
-    const scalar& q,
-    const scalar& pinf,
-    const scalar& gamma,
-    const scalar& Cv,
-    const vector& Sf,
-    const scalar& magSf
+        scalar& rhoFlux,
+        vector& rhoUFlux,
+        scalar& rhoEFlux,
+        const scalar& pLeft,
+        const scalar& pRight,
+        const vector& ULeft,
+        const vector& URight,
+        const scalar& TLeft,
+        const scalar& TRight,
+        const scalar& RLeft,
+        const scalar& RRight,
+        const scalar& CvLeft,
+        const scalar& CvRight,
+        const vector& Sf,
+        const scalar& magSf,
+        const scalar& meshPhi,
+        const tensor& R,
+        const tensor& RTranspos,
+        const scalar& fp1Left,
+        const scalar& fp1Right
 ) const
 {
 
@@ -56,6 +68,15 @@ void Foam::hllcSGFlux::evaluateFlux
     // Density
     const scalar rhoLeft = (pLeft + pinf)/(Cv*(gamma-1)*TLeft);
     const scalar rhoRight = (pRight + pinf)/(Cv*(gamma-1)*TRight);
+
+
+    //!-----------------------------------------------------------
+    // Speed of sound, for left and right side, assuming stiffened gas
+    const scalar aLeft =
+        Foam::sqrt(max(0.0,gamma*(pLeft + pinf)/rhoLeft));
+
+    const scalar aRight =
+        Foam::sqrt(max(0.0,gamma*(pRight + pinf)/rhoRight));
 
     // DensityVelocity
     const vector rhoULeft = rhoLeft*ULeft;
@@ -73,12 +94,7 @@ void Foam::hllcSGFlux::evaluateFlux
     const scalar UnLeft = (ULeft & normalVector);
     const scalar UnRight = (URight & normalVector);
 
-    // Speed of sound, for left and right side, assuming stiffened gas
-    const scalar aLeft =
-        Foam::sqrt(max(0.0,gamma*(pLeft + pinf)/rhoLeft));
 
-    const scalar aRight =
-        Foam::sqrt(max(0.0,gamma*(pRight + pinf)/rhoRight));
 
 
     // Step 2:

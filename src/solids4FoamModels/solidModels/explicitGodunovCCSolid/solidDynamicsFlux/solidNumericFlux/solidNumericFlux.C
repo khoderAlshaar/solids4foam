@@ -223,6 +223,25 @@ Foam::solidNumericFlux::solidNumericFlux
         ),
         mesh_,
         dimensionedTensor("FFlux", dimensionSet(0,1,-1,0,0,0,0), tensor::zero)
+    ),
+    
+    phi_lm_
+    (
+        IOobject("phi_lm", mesh_),
+        mesh,
+        dimensionedVector("phi_lm", dimless, vector::one)
+    ),
+    phi_P_
+    (
+        IOobject("phi_P", mesh_),
+        mesh_,
+        dimensionedTensor("phi_P", dimless, tensor::one)
+    ),
+    phi_F_
+    (
+        IOobject("phi_F", mesh_),
+        mesh_,
+        dimensionedTensor("phi_F", dimless, tensor::one)
     )
 {
     Info << "Hello from roeFlux constructor" << endl;
@@ -280,9 +299,16 @@ void Foam::solidNumericFlux::computeFlux()
     volTensorField FyGrad = grad_.gradient(Fy);
     volTensorField FzGrad = grad_.gradient(Fz);
 
-    grad_.reconstruct(lm_, lmGrad, lm_M_, lm_P_);
-    grad_.reconstruct(P_, PxGrad, PyGrad, PzGrad, P_M_, P_P_);
-    grad_.reconstruct(F_, FxGrad, FyGrad, FzGrad, F_M_, F_P_);
+    // grad_.reconstruct(lm_, lmGrad, lm_M_, lm_P_);
+    // grad_.reconstruct(P_, PxGrad, PyGrad, PzGrad, P_M_, P_P_);
+    // grad_.reconstruct(F_, FxGrad, FyGrad, FzGrad, F_M_, F_P_);
+
+    
+    grad_.reconstruct(lm_, lmGrad, lm_M_, lm_P_, phi_lm_);
+    grad_.reconstruct(P_, PxGrad, PyGrad, PzGrad, P_M_, P_P_, phi_P_);
+    grad_.reconstruct(F_, FxGrad, FyGrad, FzGrad, F_M_, F_P_, phi_F_);
+
+
 
 
 
@@ -545,11 +571,228 @@ void Foam::solidNumericFlux::computeFlux()
 }
 
 
+// void Foam::solidNumericFlux::setRotationalMatrix()
+// {
+    
+// // Loop through all faces in the mesh
+
+
+// #ifdef OPENFOAM_NOT_EXTEND
+//     const labelList& owner = mesh_.owner();
+// #else
+//     const auto& owner = mesh_.owner();
+// #endif
+
+
+//     forAll(owner, facei) 
+//     {
+//         // // Initialize an arbitrary vector
+//         vector arbitraryVector(1, 0, 0); // Default arbitrary vector along x-axis
+
+//         // Ensure the arbitrary vector is not parallel to the face normal N_[facei]
+//         if (mag(arbitraryVector & N_[facei]) > 0.999) // If nearly aligned
+//         {
+//             arbitraryVector = vector(0, 1, 0); // Switch to y-axis
+//             if (mag(arbitraryVector & N_[facei]) > 0.999) // If still nearly aligned
+//             {
+//                 arbitraryVector = vector(0, 0, 1); // Use z-axis as a last resort
+//             }
+//         }
+
+//         // Step 3: Project arbitraryVector onto the plane tangent to N_[facei]
+//         T1_[facei] = arbitraryVector - (arbitraryVector & N_[facei]) * N_[facei];
+
+//         // Find an orthogonal vector to N_[facei]
+//         // T1_[facei] = op.findOrthogonal(N_[facei]);
+
+//         // Normalize T1_ to make it a unit vector
+//         scalar T1_Mag = mag(T1_[facei]);
+//         if (T1_Mag > SMALL) // Avoid division by zero
+//         {
+//             T1_[facei] /= T1_Mag;
+//         }
+//         else
+//         {
+//             FatalErrorInFunction << "Zero-length T1_ encountered at face " << facei << abort(FatalError);
+//         }
+
+//         // Second tangential vector (T2_): Cross product of N and T1_
+//         T2_[facei] = N_[facei] ^ T1_[facei];
+
+//         // Normalize T2_ to make it a unit vector
+//         scalar T2_Mag = mag(T2_[facei]);
+//         if (T2_Mag > SMALL) // Avoid division by zero
+//         {
+//             T2_[facei] /= T2_Mag;
+//         }
+//         else
+//         {
+//             FatalErrorInFunction << "Zero-length T2_ encountered at face " << facei << abort(FatalError);
+//         }
+
+//         // Verify orthogonality of T1_, T2_, and N
+//         scalar tolerance = 1e-6;
+
+//         if (mag(N_[facei] & T1_[facei]) > tolerance) 
+//         {
+//             FatalErrorInFunction << "N and T1_ are not orthogonal at face " << facei 
+//                                 << ". Dot product: " << (N_[facei] & T1_[facei]) << abort(FatalError);
+//         }
+
+//         if (mag(N_[facei] & T2_[facei]) > tolerance) 
+//         {
+//             FatalErrorInFunction << "N and T2_ are not orthogonal at face " << facei 
+//                                 << ". Dot product: " << (N_[facei] & T2_[facei]) << abort(FatalError);
+//         }
+
+//         if (mag(T1_[facei] & T2_[facei]) > tolerance) 
+//         {
+//             FatalErrorInFunction << "T1_ and T2_ are not orthogonal at face " << facei 
+//                                 << ". Dot product: " << (T1_[facei] & T2_[facei]) << abort(FatalError);
+//         }
+
+//         // Now T1_ and T2_ are guaranteed orthogonal to N and each other
+
+
+//             //construct the rotational matrix
+//             R_[facei].xx() = N_[facei].x();
+//             R_[facei].xy() = N_[facei].y();
+//             R_[facei].xz() = N_[facei].z();
+//             R_[facei].yx() = T1_[facei].x();
+//             R_[facei].yy() = T1_[facei].y();
+//             R_[facei].yz() = T1_[facei].z();
+//             R_[facei].zx() = T2_[facei].x();
+//             R_[facei].zy() = T2_[facei].y();
+//             R_[facei].zz() = T2_[facei].z();
+
+//     }
+
+// // Coupled boundaries
+// forAll (lm_.boundaryField(), patchI)
+// {
+//     // if (mesh_.boundaryField()[patchI].coupled())
+//     // {
+//         // const fvPatch& curPatch = lm_.boundaryField()[patchI].patch();
+
+//         const labelList& fc =
+//             lm_.boundaryField()[patchI].patch().faceCells();
+        
+//         // const fvPatch& curPatch = lm_.boundaryField()[patchi].patch();
+       
+       
+
+// #ifdef OPENFOAM_NOT_EXTEND
+//         const fvsPatchVectorField& pN = N_.boundaryField()[patchI];
+//          fvsPatchVectorField& pT1 = T1_.boundaryFieldRef()[patchI];
+//          fvsPatchVectorField& pT2 = T2_.boundaryFieldRef()[patchI];
+//          fvsPatchTensorField& pR = R_.boundaryFieldRef()[patchI];
+// #else
+//         const fvsPatchVectorField& pN = N_.boundaryField()[patchI];
+//          fvsPatchVectorField& pT1 = T1_.boundaryField()[patchI];
+//          fvsPatchVectorField& pT2 = T2_.boundaryField()[patchI];
+//          fvsPatchTensorField& pR = R_.boundaryField()[patchI];
+// #endif
+
+
+//         forAll (fc, facei)
+//         {
+//             // // Initialize an arbitrary vector
+//             vector arbitraryVector(1, 0, 0); // Default arbitrary vector along x-axis
+
+//             // Ensure the arbitrary vector is not parallel to the face normal N_[facei]
+//             if (mag(arbitraryVector & pN[facei]) > 0.999) // If nearly aligned
+//             {
+//                 arbitraryVector = vector(0, 1, 0); // Switch to y-axis
+//                 if (mag(arbitraryVector & pN[facei]) > 0.999) // If still nearly aligned
+//                 {
+//                     arbitraryVector = vector(0, 0, 1); // Use z-axis as a last resort
+//                 }
+//             }
+
+//             // Step 3: Project arbitraryVector onto the plane tangent to N_[facei]
+//             pT1[facei] = arbitraryVector - (arbitraryVector & pN[facei]) * pN[facei];
+
+
+//             // Normalize T1_ to make it a unit vector
+//             scalar T1_Mag = mag(pT1[facei]);
+//             if (T1_Mag > SMALL) // Avoid division by zero
+//             {
+//                 pT1[facei] /= T1_Mag;
+//             }
+//             else
+//             {
+//                 FatalErrorInFunction << "Zero-length T1_ encountered at boundary face " << facei << abort(FatalError);
+//             }
+
+//                 // Info<< "face " << facei
+//                 // << " |N| = " << mag(pN[facei]) << endl;
+
+//             // Second tangential vector (T2_): Cross product of N and T1_
+//             pT2[facei] = pN[facei] ^ pT1[facei];
+
+//             // Normalize T2_ to make it a unit vector
+//             scalar T2_Mag = mag(pT2[facei]);
+//             if (T2_Mag > SMALL) // Avoid division by zero
+//             {
+//                 pT2[facei] /= T2_Mag;
+//             }
+//             else
+//             {
+//                 FatalErrorInFunction << "Zero-length T2_ encountered at boundary face " << facei << abort(FatalError);
+//             }
+
+//             // Verify orthogonality of T1_, T2_, and N
+//             scalar tolerance = 1e-6;
+
+//             if (mag(pN[facei] & pT1[facei]) > tolerance) 
+//             {
+//                 FatalErrorInFunction << "N and T1_ are not orthogonal at face " << facei 
+//                                     << ". Dot product: " << (pN[facei] & pT1[facei]) << abort(FatalError);
+//             }
+
+//             if (mag(pN[facei] & pT2[facei]) > tolerance) 
+//             {
+//                 FatalErrorInFunction << "N and T2_ are not orthogonal at face " << facei 
+//                                     << ". Dot product: " << (pN[facei] & pT2[facei]) << abort(FatalError);
+//             }
+
+//             if (mag(pT1[facei] & pT2[facei]) > tolerance) 
+//             {
+//                 FatalErrorInFunction << "T1_ and T2_ are not orthogonal at face " << facei 
+//                                     << ". Dot product: " << (pT1[facei] & pT2[facei]) << abort(FatalError);
+//             }
+
+//             // Now T1_ and T2_ are guaranteed orthogonal to N and each other
+
+
+//             //construct the rotational matrix
+//             pR[facei].xx() = pN[facei].x();
+//             pR[facei].xy() = pN[facei].y();
+//             pR[facei].xz() = pN[facei].z();
+//             pR[facei].yx() = pT1[facei].x();
+//             pR[facei].yy() = pT1[facei].y();
+//             pR[facei].yz() = pT1[facei].z();
+//             pR[facei].zx() = pT2[facei].x();
+//             pR[facei].zy() = pT2[facei].y();
+//             pR[facei].zz() = pT2[facei].z();
+//         }
+//     // }
+// }
+
+
+
+
+
+// RTranspos_ = R_.T();
+
+
+
+// }
+
+
+// // ************************************************************************* //
 void Foam::solidNumericFlux::setRotationalMatrix()
 {
-    
-// Loop through all faces in the mesh
-
 
 #ifdef OPENFOAM_NOT_EXTEND
     const labelList& owner = mesh_.owner();
@@ -557,211 +800,175 @@ void Foam::solidNumericFlux::setRotationalMatrix()
     const auto& owner = mesh_.owner();
 #endif
 
+    const scalar tol = 1e-8;
 
-    forAll(owner, facei) 
+    // =========================
+    // Internal faces
+    // =========================
+    forAll(owner, facei)
     {
-        // // Initialize an arbitrary vector
-        vector arbitraryVector(1, 0, 0); // Default arbitrary vector along x-axis
+        vector n = N_[facei];
+        scalar magN = mag(n);
 
-        // Ensure the arbitrary vector is not parallel to the face normal N_[facei]
-        if (mag(arbitraryVector & N_[facei]) > 0.999) // If nearly aligned
+        if (magN < SMALL)
         {
-            arbitraryVector = vector(0, 1, 0); // Switch to y-axis
-            if (mag(arbitraryVector & N_[facei]) > 0.999) // If still nearly aligned
-            {
-                arbitraryVector = vector(0, 0, 1); // Use z-axis as a last resort
-            }
+            FatalErrorInFunction
+                << "Zero normal at face " << facei
+                << abort(FatalError);
         }
 
-        // Step 3: Project arbitraryVector onto the plane tangent to N_[facei]
-        T1_[facei] = arbitraryVector - (arbitraryVector & N_[facei]) * N_[facei];
+        // Normalize
+        n /= magN;
 
-        // Find an orthogonal vector to N_[facei]
-        // T1_[facei] = op.findOrthogonal(N_[facei]);
+        scalar n1 = n.x();
+        scalar n2 = n.y();
+        scalar n3 = n.z();
 
-        // Normalize T1_ to make it a unit vector
-        scalar T1_Mag = mag(T1_[facei]);
-        if (T1_Mag > SMALL) // Avoid division by zero
-        {
-            T1_[facei] /= T1_Mag;
-        }
-        else
-        {
-            FatalErrorInFunction << "Zero-length T1_ encountered at face " << facei << abort(FatalError);
-        }
+        // s = sign(n1), fallback = 1
+        scalar s = (mag(n1) > SMALL) ? sign(n1) : 1.0;
 
-        // Second tangential vector (T2_): Cross product of N and T1_
-        T2_[facei] = N_[facei] ^ T1_[facei];
+        scalar denom = n1 + s;
 
-        // Normalize T2_ to make it a unit vector
-        scalar T2_Mag = mag(T2_[facei]);
-        if (T2_Mag > SMALL) // Avoid division by zero
+        if (mag(denom) < SMALL)
         {
-            T2_[facei] /= T2_Mag;
-        }
-        else
-        {
-            FatalErrorInFunction << "Zero-length T2_ encountered at face " << facei << abort(FatalError);
+            FatalErrorInFunction
+                << "Singular rotation matrix at face " << facei
+                << " (n1 + s ≈ 0)"
+                << abort(FatalError);
         }
 
-        // Verify orthogonality of T1_, T2_, and N
-        scalar tolerance = 1e-6;
+        // =========================
+        // Build rotation matrix
+        // =========================
+        tensor& Rf = R_[facei];
 
-        if (mag(N_[facei] & T1_[facei]) > tolerance) 
+        Rf.xx() = n1;
+        Rf.xy() = n2;
+        Rf.xz() = n3;
+
+        Rf.yx() = -n2;
+        Rf.yy() = n1 + (n3*n3)/denom;
+        Rf.yz() = -(n2*n3)/denom;
+
+        Rf.zx() = -n3;
+        Rf.zy() = -(n3*n2)/denom;
+        Rf.zz() = n1 + (n2*n2)/denom;
+
+        // =========================
+        // DEBUG: Check R * R^T = I
+        // =========================
+        tensor Icheck = Rf & Rf.T();
+
+        if
+        (
+            mag(Icheck.xx() - 1) > tol ||
+            mag(Icheck.yy() - 1) > tol ||
+            mag(Icheck.zz() - 1) > tol ||
+            mag(Icheck.xy()) > tol ||
+            mag(Icheck.xz()) > tol ||
+            mag(Icheck.yx()) > tol ||
+            mag(Icheck.yz()) > tol ||
+            mag(Icheck.zx()) > tol ||
+            mag(Icheck.zy()) > tol
+        )
         {
-            FatalErrorInFunction << "N and T1_ are not orthogonal at face " << facei 
-                                << ". Dot product: " << (N_[facei] & T1_[facei]) << abort(FatalError);
+            FatalErrorInFunction
+                << "Rotation matrix is not orthogonal at face " << facei << nl
+                << "R = " << Rf << nl
+                << "R*R^T = " << Icheck << nl
+                << abort(FatalError);
         }
-
-        if (mag(N_[facei] & T2_[facei]) > tolerance) 
-        {
-            FatalErrorInFunction << "N and T2_ are not orthogonal at face " << facei 
-                                << ". Dot product: " << (N_[facei] & T2_[facei]) << abort(FatalError);
-        }
-
-        if (mag(T1_[facei] & T2_[facei]) > tolerance) 
-        {
-            FatalErrorInFunction << "T1_ and T2_ are not orthogonal at face " << facei 
-                                << ". Dot product: " << (T1_[facei] & T2_[facei]) << abort(FatalError);
-        }
-
-        // Now T1_ and T2_ are guaranteed orthogonal to N and each other
-
-
-            //construct the rotational matrix
-            R_[facei].xx() = N_[facei].x();
-            R_[facei].xy() = N_[facei].y();
-            R_[facei].xz() = N_[facei].z();
-            R_[facei].yx() = T1_[facei].x();
-            R_[facei].yy() = T1_[facei].y();
-            R_[facei].yz() = T1_[facei].z();
-            R_[facei].zx() = T2_[facei].x();
-            R_[facei].zy() = T2_[facei].y();
-            R_[facei].zz() = T2_[facei].z();
-
     }
 
-// Coupled boundaries
-forAll (lm_.boundaryField(), patchI)
-{
-    // if (mesh_.boundaryField()[patchI].coupled())
-    // {
-        // const fvPatch& curPatch = lm_.boundaryField()[patchI].patch();
-
+    // =========================
+    // Boundary faces
+    // =========================
+    forAll(lm_.boundaryField(), patchI)
+    {
         const labelList& fc =
             lm_.boundaryField()[patchI].patch().faceCells();
-        
-        // const fvPatch& curPatch = lm_.boundaryField()[patchi].patch();
-       
-       
 
 #ifdef OPENFOAM_NOT_EXTEND
         const fvsPatchVectorField& pN = N_.boundaryField()[patchI];
-         fvsPatchVectorField& pT1 = T1_.boundaryFieldRef()[patchI];
-         fvsPatchVectorField& pT2 = T2_.boundaryFieldRef()[patchI];
-         fvsPatchTensorField& pR = R_.boundaryFieldRef()[patchI];
+        fvsPatchTensorField& pR = R_.boundaryFieldRef()[patchI];
 #else
         const fvsPatchVectorField& pN = N_.boundaryField()[patchI];
-         fvsPatchVectorField& pT1 = T1_.boundaryField()[patchI];
-         fvsPatchVectorField& pT2 = T2_.boundaryField()[patchI];
-         fvsPatchTensorField& pR = R_.boundaryField()[patchI];
+        fvsPatchTensorField& pR = R_.boundaryField()[patchI];
 #endif
 
-
-        forAll (fc, facei)
+        forAll(fc, facei)
         {
-            // // Initialize an arbitrary vector
-            vector arbitraryVector(1, 0, 0); // Default arbitrary vector along x-axis
+            vector n = pN[facei];
+            scalar magN = mag(n);
 
-            // Ensure the arbitrary vector is not parallel to the face normal N_[facei]
-            if (mag(arbitraryVector & pN[facei]) > 0.999) // If nearly aligned
+            if (magN < SMALL)
             {
-                arbitraryVector = vector(0, 1, 0); // Switch to y-axis
-                if (mag(arbitraryVector & pN[facei]) > 0.999) // If still nearly aligned
-                {
-                    arbitraryVector = vector(0, 0, 1); // Use z-axis as a last resort
-                }
+                FatalErrorInFunction
+                    << "Zero normal at boundary face " << facei
+                    << abort(FatalError);
             }
 
-            // Step 3: Project arbitraryVector onto the plane tangent to N_[facei]
-            pT1[facei] = arbitraryVector - (arbitraryVector & pN[facei]) * pN[facei];
+            n /= magN;
 
+            scalar n1 = n.x();
+            scalar n2 = n.y();
+            scalar n3 = n.z();
 
-            // Normalize T1_ to make it a unit vector
-            scalar T1_Mag = mag(pT1[facei]);
-            if (T1_Mag > SMALL) // Avoid division by zero
+            scalar s = (mag(n1) > SMALL) ? sign(n1) : 1.0;
+            scalar denom = n1 + s;
+
+            if (mag(denom) < SMALL)
             {
-                pT1[facei] /= T1_Mag;
-            }
-            else
-            {
-                FatalErrorInFunction << "Zero-length T1_ encountered at boundary face " << facei << abort(FatalError);
-            }
-
-                // Info<< "face " << facei
-                // << " |N| = " << mag(pN[facei]) << endl;
-
-            // Second tangential vector (T2_): Cross product of N and T1_
-            pT2[facei] = pN[facei] ^ pT1[facei];
-
-            // Normalize T2_ to make it a unit vector
-            scalar T2_Mag = mag(pT2[facei]);
-            if (T2_Mag > SMALL) // Avoid division by zero
-            {
-                pT2[facei] /= T2_Mag;
-            }
-            else
-            {
-                FatalErrorInFunction << "Zero-length T2_ encountered at boundary face " << facei << abort(FatalError);
+                FatalErrorInFunction
+                    << "Singular rotation matrix at boundary face "
+                    << facei
+                    << abort(FatalError);
             }
 
-            // Verify orthogonality of T1_, T2_, and N
-            scalar tolerance = 1e-6;
+            tensor& Rf = pR[facei];
 
-            if (mag(pN[facei] & pT1[facei]) > tolerance) 
+            Rf.xx() = n1;
+            Rf.xy() = n2;
+            Rf.xz() = n3;
+
+            Rf.yx() = -n2;
+            Rf.yy() = n1 + (n3*n3)/denom;
+            Rf.yz() = -(n2*n3)/denom;
+
+            Rf.zx() = -n3;
+            Rf.zy() = -(n3*n2)/denom;
+            Rf.zz() = n1 + (n2*n2)/denom;
+
+            // =========================
+            // DEBUG CHECK
+            // =========================
+            tensor Icheck = Rf & Rf.T();
+
+            if
+            (
+                mag(Icheck.xx() - 1) > tol ||
+                mag(Icheck.yy() - 1) > tol ||
+                mag(Icheck.zz() - 1) > tol ||
+                mag(Icheck.xy()) > tol ||
+                mag(Icheck.xz()) > tol ||
+                mag(Icheck.yx()) > tol ||
+                mag(Icheck.yz()) > tol ||
+                mag(Icheck.zx()) > tol ||
+                mag(Icheck.zy()) > tol
+            )
             {
-                FatalErrorInFunction << "N and T1_ are not orthogonal at face " << facei 
-                                    << ". Dot product: " << (pN[facei] & pT1[facei]) << abort(FatalError);
+                FatalErrorInFunction
+                    << "Rotation matrix NOT orthogonal at boundary face "
+                    << facei << nl
+                    << "R = " << Rf << nl
+                    << "R*R^T = " << Icheck << nl
+                    << abort(FatalError);
             }
-
-            if (mag(pN[facei] & pT2[facei]) > tolerance) 
-            {
-                FatalErrorInFunction << "N and T2_ are not orthogonal at face " << facei 
-                                    << ". Dot product: " << (pN[facei] & pT2[facei]) << abort(FatalError);
-            }
-
-            if (mag(pT1[facei] & pT2[facei]) > tolerance) 
-            {
-                FatalErrorInFunction << "T1_ and T2_ are not orthogonal at face " << facei 
-                                    << ". Dot product: " << (pT1[facei] & pT2[facei]) << abort(FatalError);
-            }
-
-            // Now T1_ and T2_ are guaranteed orthogonal to N and each other
-
-
-            //construct the rotational matrix
-            pR[facei].xx() = pN[facei].x();
-            pR[facei].xy() = pN[facei].y();
-            pR[facei].xz() = pN[facei].z();
-            pR[facei].yx() = pT1[facei].x();
-            pR[facei].yy() = pT1[facei].y();
-            pR[facei].yz() = pT1[facei].z();
-            pR[facei].zx() = pT2[facei].x();
-            pR[facei].zy() = pT2[facei].y();
-            pR[facei].zz() = pT2[facei].z();
         }
-    // }
+    }
+
+    // =========================
+    // Store transpose
+    // =========================
+    RTranspos_ = R_.T();
 }
-
-
-
-
-
-RTranspos_ = R_.T();
-
-
-
-}
-
-
-// ************************************************************************* //

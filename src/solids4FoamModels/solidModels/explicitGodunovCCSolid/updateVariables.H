@@ -23,7 +23,8 @@ J_ = det(F_);
 
 // Wave speeds
 mech_.correct(Up_, Us_, F_);
-Up_time_ = model_.Up()/mech_.stretch();
+// Up_time_ = model_.Up()/mech_.stretch();
+Up_time_ = model_.Up();///mech_.stretch();
 
 // Constitutive model
 model_.correct();

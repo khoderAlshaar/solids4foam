@@ -39,6 +39,8 @@ SourceFiles
 #ifndef gradientSchemes_H
 #define gradientSchemes_H
 
+#include "volFieldsFwd.H"
+#include "surfaceFieldsFwd.H"
 #include "volFields.H"
 #include "surfaceFields.H"
 #include "pointFields.H"
@@ -76,6 +78,11 @@ class gradientSchemes
 
         //- Inverse of local distance matrix
         volTensorField AinvLocal_;
+
+        const dictionary& dict_;
+
+        const word order_;
+        const word limiter_;
 
 private:
 
@@ -175,6 +182,56 @@ public:
                 GeometricField<tensor, fvsPatchField, surfaceMesh>&,
                 GeometricField<tensor, fvsPatchField, surfaceMesh>&
             );
+
+
+            //!--------------------------------------------------
+            
+            //- Set BarthJespersenLimiter limiter value
+            void limiter
+            (
+                scalar& lim,
+                const scalar& cellVolume,
+                const scalar& deltaOneMax,
+                const scalar& deltaOneMin,
+                const scalar& extrapolate
+            );
+
+        
+            //construct with limiter
+            scalar phi(scalar& x);
+
+            //- Reconstruction of a volScalarField to surfaceScalarField
+            void reconstruct
+            (
+                GeometricField<scalar, fvPatchField, volMesh>&,
+                const GeometricField<vector, fvPatchField, volMesh>&,
+                GeometricField<scalar, fvsPatchField, surfaceMesh>&,
+                GeometricField<scalar, fvsPatchField, surfaceMesh>&,
+                GeometricField<scalar, fvPatchField, volMesh>&
+
+            );
+            //- Reconstruction of a volVectorField to surfaceVectorField
+            void reconstruct
+            (
+                GeometricField<vector, fvPatchField, volMesh>&,
+                const GeometricField<tensor, fvPatchField, volMesh>&,
+                GeometricField<vector, fvsPatchField, surfaceMesh>&,
+                GeometricField<vector, fvsPatchField, surfaceMesh>&,
+                GeometricField<vector, fvPatchField, volMesh>&
+            );
+
+            //- Reconstruction for a volTensorField to surfaceTensorField
+            void reconstruct
+            (
+                GeometricField<tensor, fvPatchField, volMesh>&,
+                const GeometricField<tensor, fvPatchField, volMesh>&,
+                const GeometricField<tensor, fvPatchField, volMesh>&,
+                const GeometricField<tensor, fvPatchField, volMesh>&,
+                GeometricField<tensor, fvsPatchField, surfaceMesh>&,
+                GeometricField<tensor, fvsPatchField, surfaceMesh>&,
+                GeometricField<tensor, fvPatchField, volMesh>&
+            );
+
 
 };
 
